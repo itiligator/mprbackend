@@ -12,18 +12,18 @@ class ClientType(models.Model):
         (STORE, 'Магазин'),
         (DRAFT, 'Драфт'),
     )
-    type = models.CharField(max_length=2, choices=TYPE, default=STORE)
+    client_type = models.CharField(max_length=2, choices=TYPE, default=STORE)
 
     def __str__(self):
-        return self.type
+        return dict(self.TYPE)[str(self.client_type)]
 
 
 class PriceType(models.Model):
     HORECA = 'HC'
     DRAFT = 'DR'
     MARCHENKO = 'MR'
-    HORECA_ACTION = 'HC'
-    DRAFT_ACTION = 'DR'
+    HORECA_ACTION = 'HA'
+    DRAFT_ACTION = 'DA'
 
     TYPE = (
         (HORECA, 'Хорека'),
@@ -33,7 +33,10 @@ class PriceType(models.Model):
         (MARCHENKO, 'Марченко'),
 
     )
-    type = models.CharField(max_length=2, choices=TYPE, default=HORECA)
+    price_type = models.CharField(max_length=2, choices=TYPE, default=HORECA)
+
+    def __str__(self):
+        return dict(self.TYPE)[str(self.price_type)]
 
 
 class Client(models.Model):
@@ -57,11 +60,11 @@ class Visit(models.Model):
 
 class Product(models.Model):
     item = models.IntegerField(unique=True)
-    description = models.CharField(max_length=100)
     name = models.CharField(max_length=40)
+    description = models.CharField(max_length=100)
 
     def __str__(self):
-        return 'А: ' + str(self.item) + ' ' + str(self.name)
+        return 'А:' + str(self.item) + ' ' + str(self.name)
 
 
 class Price(models.Model):
