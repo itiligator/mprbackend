@@ -3,16 +3,44 @@ from django.db import models
 
 
 class ClientType(models.Model):
-    type = models.CharField(max_length=2)
+    HORECA = 'HC'
+    STORE = 'ST'
+    DRAFT = 'DR'
+
+    TYPE = (
+        (HORECA, 'Хорека'),
+        (STORE, 'Магазин'),
+        (DRAFT, 'Драфт'),
+    )
+    type = models.CharField(max_length=2, choices=TYPE, default=STORE)
 
     def __str__(self):
         return self.type
+
+
+class PriceType(models.Model):
+    HORECA = 'HC'
+    DRAFT = 'DR'
+    MARCHENKO = 'MR'
+    HORECA_ACTION = 'HC'
+    DRAFT_ACTION = 'DR'
+
+    TYPE = (
+        (HORECA, 'Хорека'),
+        (DRAFT, 'Драфт'),
+        (HORECA_ACTION, 'Акция Хорека'),
+        (DRAFT_ACTION, 'Драфт Хорека'),
+        (MARCHENKO, 'Марченко'),
+
+    )
+    type = models.CharField(max_length=2, choices=TYPE, default=HORECA)
 
 
 class Client(models.Model):
     name = models.CharField(max_length=200)
     inn = models.CharField(max_length=12, unique=True)
     client_type = models.ForeignKey(ClientType, on_delete=models.CASCADE)
+    price_type = models.ForeignKey(PriceType, on_delete=models.CASCADE)
     manager = models.CharField(max_length=200)
     is_active = models.BooleanField()
 
@@ -37,15 +65,15 @@ class Product(models.Model):
 
 
 class Price(models.Model):
-    client_type = models.ForeignKey(ClientType, on_delete=models.CASCADE)
+    price_type = models.ForeignKey(PriceType, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     value = models.FloatField()
 
     class Meta:
-        unique_together = ('client_type', 'product', )
+        unique_together = ('price_type', 'product',)
 
     def __str__(self):
-        return str(self.value) + ' за ' + self.product.name + ' для ' + self.client_type.name
+        return str(self.value) + ' за ' + self.product.name + ' для ' + self.price_type.name
 
 
 class Order(models.Model):
@@ -60,4 +88,3 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField()
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
-
