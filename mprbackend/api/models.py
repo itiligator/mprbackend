@@ -14,8 +14,11 @@ class ClientType(models.Model):
     )
     client_type = models.CharField(max_length=2, choices=TYPE, default=STORE)
 
-    def __str__(self):
+    def name(self):
         return dict(self.TYPE)[str(self.client_type)]
+
+    def __str__(self):
+        return self.name()
 
 
 class PriceType(models.Model):
@@ -29,23 +32,26 @@ class PriceType(models.Model):
         (HORECA, 'Хорека'),
         (DRAFT, 'Драфт'),
         (HORECA_ACTION, 'Акция Хорека'),
-        (DRAFT_ACTION, 'Драфт Хорека'),
+        (DRAFT_ACTION, 'Акция Драфт'),
         (MARCHENKO, 'Марченко'),
 
     )
     price_type = models.CharField(max_length=2, choices=TYPE, default=HORECA)
 
-    def __str__(self):
+    def name(self):
         return dict(self.TYPE)[str(self.price_type)]
+
+    def __str__(self):
+        return self.name()
 
 
 class Client(models.Model):
     name = models.CharField(max_length=200)
-    inn = models.CharField(max_length=12, unique=True)
+    inn = models.CharField(max_length=12)
     client_type = models.ForeignKey(ClientType, on_delete=models.CASCADE)
     price_type = models.ForeignKey(PriceType, on_delete=models.CASCADE)
-    manager = models.CharField(max_length=200)
-    is_active = models.BooleanField()
+    manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -76,7 +82,7 @@ class Price(models.Model):
         unique_together = ('price_type', 'product',)
 
     def __str__(self):
-        return str(self.value) + ' за ' + self.product.name + ' для ' + self.price_type.name
+        return str(self.value) + ' за ' + self.product.name + ' для ' + self.price_type.name()
 
 
 class Order(models.Model):
