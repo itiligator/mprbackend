@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+import random
 
 
 class ClientType(models.Model):
@@ -88,12 +89,27 @@ class Price(models.Model):
 class Order(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    date_created = models.DateField(auto_now_add=True)
+    creation_date = models.DateField()
     delivery_date = models.DateField()
     processed = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        super(Order, self).save(*args, **kwargs)
+        for product in Product.objects.all():
+            oi = OrderItem.objects.create(product=product, quantity=0, order=self)
+
+    def __str__(self):
+        return 'Заказ от ' + str(self.creation_date) + ' для ' + str(self.client) + ' к ' + str(self.delivery_date)
 
 
 class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.IntegerField()
+    quantity = models.PositiveSmallIntegerField()
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('order', 'product',)
+
+    def __str__(self):
+        return str(self.quantity) + ' шт. ' + str(self.product.name) + ' для ' \
+               + str(self.order.client.name) + 'в заказе от ' + str(self.order.creation_date)
