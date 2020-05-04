@@ -1,7 +1,26 @@
 from django.conf import settings
 from django.db import models
-import random
 
+
+class Visit(models.Model):
+    UUID = models.CharField(max_length=36)
+    date = models.DateField()
+    database = models.BooleanField(default=True)
+    client_ID = models.CharField(max_length=200)
+    payment = models.FloatField(default=-1)
+    manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    processed = models.BooleanField(default=False)
+    delivered = models.BooleanField(default=False)
+    status = models.SmallIntegerField(default=-1)
+
+
+class Order(models.Model):
+    visit = models.ForeignKey(Visit, on_delete=models.CASCADE, null=True)
+    product_item = models.CharField(max_length=200)
+    ordered_quantity = models.SmallIntegerField(default=-1)
+    delivered_quantity = models.SmallIntegerField(default=-1)
+    recommended_quantity = models.SmallIntegerField(default=-1)
+    stock_quantity = models.SmallIntegerField(default=-1)
 
 # class ClientType(models.Model):
 #     HORECA = 'HC'
@@ -64,15 +83,6 @@ import random
 #         return self.name
 
 
-class Visit(models.Model):
-    UUID = models.CharField(max_length=36)
-    date = models.DateField()
-    database = models.BooleanField(default=True)
-    client_ID = models.CharField(max_length=200)
-    payment = models.FloatField(default=0)
-    manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-
-
 # class Product(models.Model):
 #     item = models.IntegerField(unique=True)
 #     name = models.CharField(max_length=40)
@@ -110,10 +120,3 @@ class Visit(models.Model):
 #     def __str__(self):
 #         return 'Заказ от ' + str(self.creation_date) + ' для ' + str(self.client) + ' к ' + str(self.delivery_date)
 #
-
-class Order(models.Model):
-    product_item = models.CharField(max_length=200)
-    ordered_quantity = models.SmallIntegerField()
-    delivered_quantity = models.SmallIntegerField()
-    recommended_quantity = models.SmallIntegerField()
-    stock_quantity = models.SmallIntegerField()
