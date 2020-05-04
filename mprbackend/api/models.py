@@ -2,6 +2,22 @@ from django.conf import settings
 from django.db import models
 
 
+# временные предположения относительно уникальных идентификаторов и типов, получаемых в данных от 1С:
+# manager_ID: перечисление от 1 до N
+# client_ID: перечисление от 1 до N
+# product_item: перечисление от 1 до N
+# client_type: перечисление от 1 до N
+# price_type: перечисление от 1 до N
+# иные предположения:
+# роли пользователей: "MPR" или "OFFICE"
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True)
+    role = models.CharField(max_length=20)
+    manager_ID = models.CharField(max_length=200)
+
+
 class Visit(models.Model):
     UUID = models.CharField(max_length=36)
     date = models.DateField()
