@@ -46,22 +46,22 @@ import random
 #         return self.name()
 
 
-class Client(models.Model):
-    client_ID = models.CharField(max_length=100)
-    name = models.CharField(max_length=200)
-    inn = models.CharField(max_length=12)
-    client_type = models.CharField(max_length=20)
-    price_type = models.CharField(max_length=20)
-    managers = models.ManyToManyField(settings.AUTH_USER_MODEL)
-    email = models.CharField(max_length=200)
-    phone = models.CharField(max_length=200)
-    longitude = models.CharField(max_length=200)
-    latitude = models.CharField(max_length=200)
-    status = models.BooleanField(default=True)
-    database = models.BooleanField(default=True)
-
-    def __str__(self):
-        return self.name
+# class Client(models.Model):
+#     client_ID = models.CharField(max_length=100)
+#     name = models.CharField(max_length=200)
+#     inn = models.CharField(max_length=12)
+#     client_type = models.CharField(max_length=20)
+#     price_type = models.CharField(max_length=20)
+#     managers = models.ManyToManyField(settings.AUTH_USER_MODEL)
+#     email = models.CharField(max_length=200)
+#     phone = models.CharField(max_length=200)
+#     longitude = models.CharField(max_length=200)
+#     latitude = models.CharField(max_length=200)
+#     status = models.BooleanField(default=True)
+#     database = models.BooleanField(default=True)
+#
+#     def __str__(self):
+#         return self.name
 
 
 class Visit(models.Model):
