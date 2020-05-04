@@ -68,7 +68,7 @@ class Visit(models.Model):
     UUID = models.CharField(max_length=36)
     date = models.DateField()
     database = models.BooleanField(default=True)
-    client = models.ForeignKey(Client, on_delete=models.CASCADE)
+    client_ID = models.CharField(max_length=200)
     payment = models.FloatField(default=0)
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
