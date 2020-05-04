@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.utils import timezone
 
-from .models import Price, PriceType, Product, Client, OrderItem, Order
+from .models import Client, Order
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 

@@ -1,10 +1,10 @@
 from django.contrib import admin
-from .models import PriceType, ClientType, Product, Price, Client, OrderItem, Order
+from .models import Client, Order
 
-admin.site.register(PriceType)
-admin.site.register(ClientType)
-admin.site.register(Product)
-admin.site.register(Price)
+# admin.site.register(PriceType)
+# admin.site.register(ClientType)
+# admin.site.register(Product)
+# admin.site.register(Price)
 admin.site.register(Client)
 admin.site.register(Order)
-admin.site.register(OrderItem)
+# admin.site.register(OrderItem)
