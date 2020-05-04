@@ -113,7 +113,7 @@ class Visit(models.Model):
 
 class Order(models.Model):
     product_item = models.CharField(max_length=200)
-    ordered_quantity = models.PositiveSmallIntegerField()
-    delivered_quantity = models.PositiveSmallIntegerField()
-    recommended_quantity = models.PositiveSmallIntegerField()
-    stock_quantity = models.PositiveSmallIntegerField()
+    ordered_quantity = models.SmallIntegerField()
+    delivered_quantity = models.SmallIntegerField()
+    recommended_quantity = models.SmallIntegerField()
+    stock_quantity = models.SmallIntegerField()
