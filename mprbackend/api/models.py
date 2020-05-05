@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 # временные предположения относительно уникальных идентификаторов и типов, получаемых в данных от 1С:
@@ -9,13 +11,28 @@ from django.db import models
 # client_type: перечисление от 1 до N
 # price_type: перечисление от 1 до N
 # иные предположения:
-# роли пользователей: "MPR" или "OFFICE"
+# роли пользователей: "MPR", "OFFICE", "1S"
 
 
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True)
     role = models.CharField(max_length=20)
-    manager_ID = models.CharField(max_length=200)
+    manager_ID = models.CharField(max_length=200, null=True, blank=True)
+
+    def __str__(self):
+        onesid = (', ID в 1С: ' + self.manager_ID if self.manager_ID else "")
+        return self.user.first_name + ' ' + self.user.last_name + ', роль: ' + self.role + onesid
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def save_user_profile(sender, instance, **kwargs):
+    instance.userprofile.save()
 
 
 class Visit(models.Model):
