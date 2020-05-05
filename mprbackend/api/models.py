@@ -40,7 +40,7 @@ class Visit(models.Model):
     date = models.DateField()
     database = models.BooleanField(default=True)
     client_ID = models.CharField(max_length=200)
-    payment = models.FloatField(default=-1)
+    payment = models.FloatField(null=True, blank=True)
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     processed = models.BooleanField(default=False)
     delivered = models.BooleanField(default=False)
@@ -50,10 +50,10 @@ class Visit(models.Model):
 class Order(models.Model):
     visit = models.ForeignKey(Visit, on_delete=models.CASCADE, null=True)
     product_item = models.CharField(max_length=200)
-    ordered_quantity = models.SmallIntegerField(default=-1)
-    delivered_quantity = models.SmallIntegerField(default=-1)
-    recommended_quantity = models.SmallIntegerField(default=-1)
-    stock_quantity = models.SmallIntegerField(default=-1)
+    ordered_quantity = models.SmallIntegerField(null=True, blank=True)
+    delivered_quantity = models.SmallIntegerField(null=True, blank=True)
+    recommended_quantity = models.SmallIntegerField(null=True, blank=True)
+    stock_quantity = models.SmallIntegerField(null=True, blank=True)
 
 # class ClientType(models.Model):
 #     HORECA = 'HC'
