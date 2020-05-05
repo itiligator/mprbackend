@@ -84,6 +84,98 @@ prices_schema = {
     }
 }
 
+clients_path = os.path.join(settings.BASE_DIR, "static", "clients.json")
+clients_schema = {
+    "type": "array",
+    "items": {
+        "title": "Клиент",
+        "type": "object",
+        "description": "Данные клиента",
+        "x-examples": {},
+        "properties": {
+          "clientID": {
+            "type": "string",
+            "description": "Уникальный идентификатор клиента"
+          },
+          "name": {
+            "type": "string",
+            "description": "Наименование клиента для отображения пользователю"
+          },
+          "inn": {
+            "type": "string",
+            "description": "ИНН"
+          },
+          "clientType": {
+            "type": "string",
+            "description": "Тип клиента (хорека, драфт, магазин etc)"
+          },
+          "priceType": {
+            "type": "string",
+            "description": "Тип цен для клиента"
+          },
+          "delay": {
+            "type": "integer",
+            "default": 0,
+            "description": "Отсрочка по договору",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0,
+            "maximum": 45
+          },
+          "limit": {
+            "type": "integer",
+            "default": 0,
+            "description": "Лимит",
+            "format": "int64",
+            "example": 0,
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "authorizedManagersID": {
+            "type": "array",
+            "description": "Массив ID менеджеров, для которых доступен клиент",
+            "items": {
+              "type": "string"
+            }
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "manager": {
+            "type": "string"
+          },
+          "longitude": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "string"
+          },
+          "status": {
+            "type": "boolean",
+            "default": "1",
+            "description": "Действует/не действует"
+          },
+          "dataBase": {
+            "type": "boolean",
+            "default": "0"
+          }
+        },
+        "required": [
+          "clientID",
+          "name",
+          "clientType",
+          "priceType",
+          "delay",
+          "authorizedManagersID",
+          "status",
+          "dataBase"
+        ]
+      },
+}
 
 # TODO: переписать функции. DRY!
 @api_view(['GET', 'POST'])
@@ -97,13 +189,16 @@ def products(request):
         except FileNotFoundError:
             return Response('No such file, please upload it first', status=status.HTTP_503_SERVICE_UNAVAILABLE)
     elif request.method == 'POST':
-        try:
-            jsonschema.validate(instance=request.data, schema=products_schema)
-        except jsonschema.exceptions.ValidationError:
-            return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
-        with open(products_path, 'w', encoding="utf-8") as f:
-            json.dump(request.data, f, ensure_ascii=False)
-        return Response('Product list have been saved', status=status.HTTP_200_OK)
+        if request.user.userprofile.role != '1S':
+            return Response("Only 1S can do it", status=status.HTTP_403_FORBIDDEN)
+        else:
+            try:
+                jsonschema.validate(instance=request.data, schema=products_schema)
+            except jsonschema.exceptions.ValidationError:
+                return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+            with open(products_path, 'w', encoding="utf-8") as f:
+                json.dump(request.data, f, ensure_ascii=False)
+            return Response('Product list have been saved', status=status.HTTP_200_OK)
     else:
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -112,7 +207,6 @@ def products(request):
 @permission_classes([IsAuthenticated])
 def prices(request):
     if request.method == 'GET':
-        print(request.query_params)
         try:
             with open(prices_path, 'r', encoding="utf-8") as f:
                 product_item = request.query_params.get('productItem')
@@ -126,13 +220,16 @@ def prices(request):
         except FileNotFoundError:
             return Response('No such file, please upload it first', status=status.HTTP_503_SERVICE_UNAVAILABLE)
     elif request.method == 'POST':
-        try:
-            jsonschema.validate(instance=request.data, schema=prices_schema)
-        except jsonschema.exceptions.ValidationError:
-            return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
-        with open(prices_path, 'w', encoding="utf-8") as f:
-            json.dump(request.data, f, ensure_ascii=False)
-        return Response('Price list have been saved', status=status.HTTP_200_OK)
+        if request.user.userprofile.role != '1S':
+            return Response("Only 1S can do it", status=status.HTTP_403_FORBIDDEN)
+        else:
+            try:
+                jsonschema.validate(instance=request.data, schema=prices_schema)
+            except jsonschema.exceptions.ValidationError:
+                return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+            with open(prices_path, 'w', encoding="utf-8") as f:
+                json.dump(request.data, f, ensure_ascii=False)
+            return Response('Price list have been saved', status=status.HTTP_200_OK)
     else:
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -150,6 +247,50 @@ def users(request):
             data.append({'firstName': user.first_name, 'lastName': user.last_name, 'ID': user.userprofile.manager_ID})
         return JsonResponse(data, safe=False)
     return Response({}, status=status.HTTP_403_FORBIDDEN)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def clients(request):
+    if request.method == 'GET':
+        try:
+            with open(clients_path, 'r', encoding="utf-8") as f:
+                print(request.query_params)
+                client_id = request.query_params.get('ID')
+                client_type = request.query_params.get('clientType')
+                price_type = request.query_params.get('priceType')
+                client_status = request.query_params.get('status')
+                if request.user.userprofile.role == 'MPR':
+                    manager = request.user.userprofile.manager_ID
+                else:
+                    manager = request.query_params.get('managerID')
+                json_data = json.loads(f.read())
+                if client_id:
+                    json_data = [x for x in json_data if x['ID'] == client_id]
+                if client_type:
+                    json_data = [x for x in json_data if x['clientType'] == client_type]
+                if price_type:
+                    json_data = [x for x in json_data if x['priceType'] == price_type]
+                if client_status:
+                    json_data = [x for x in json_data if str(x['status']).lower() == client_status]
+                if manager:
+                    json_data = [x for x in json_data if manager in x['authorizedManagersID']]
+                return JsonResponse(json_data, safe=False)
+        except FileNotFoundError:
+            return Response('No such file, please upload it first', status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    elif request.method == 'POST':
+        if request.user.userprofile.role != '1S':
+            return Response("Only 1S can do it", status=status.HTTP_403_FORBIDDEN)
+        else:
+            try:
+                jsonschema.validate(instance=request.data, schema=clients_schema)
+            except jsonschema.exceptions.ValidationError:
+                return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+            with open(clients_path, 'w', encoding="utf-8") as f:
+                json.dump(request.data, f, ensure_ascii=False)
+            return Response('Client list have been saved', status=status.HTTP_200_OK)
+    else:
+        return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 # @api_view(['GET'])
 # @permission_classes([IsAuthenticated])
