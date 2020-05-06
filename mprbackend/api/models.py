@@ -43,17 +43,18 @@ class Visit(models.Model):
     payment = models.FloatField(null=True, blank=True)
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     processed = models.BooleanField(default=False)
-    delivered = models.BooleanField(default=False)
+    invoice = models.BooleanField(default=False)
     status = models.SmallIntegerField(default=-1)
 
 
 class Order(models.Model):
     visit = models.ForeignKey(Visit, on_delete=models.CASCADE, null=True)
     product_item = models.CharField(max_length=200)
-    ordered_quantity = models.SmallIntegerField(null=True, blank=True)
-    delivered_quantity = models.SmallIntegerField(null=True, blank=True)
-    recommended_quantity = models.SmallIntegerField(null=True, blank=True)
-    stock_quantity = models.SmallIntegerField(null=True, blank=True)
+    order = models.SmallIntegerField(null=True, blank=True, default=0)
+    delivered = models.SmallIntegerField(null=True, blank=True, default=0)
+    recommend = models.SmallIntegerField(null=True, blank=True, default=0)
+    balance = models.SmallIntegerField(null=True, blank=True, default=0)
+    sales = models.SmallIntegerField(null=True, blank=True, default=0)
 
 # class ClientType(models.Model):
 #     HORECA = 'HC'
