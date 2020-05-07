@@ -67,12 +67,13 @@ prices_schema = {
                 "type": "string",
                 "description": "Тип цены"
             },
-            "amount": {
+            "price_0": {
                 "type": "string",
-                "description": "Величина в рублях"
+                "description": "Цена в рублях 2"
             },
-            "database": {
-                "type": "boolean"
+            "price_1": {
+                "type": "string",
+                "description": "Цена в рублях 1"
             }
         },
         "required": [
@@ -93,10 +94,6 @@ clients_schema = {
         "description": "Данные клиента",
         "x-examples": {},
         "properties": {
-          "clientID": {
-            "type": "string",
-            "description": "Уникальный идентификатор клиента"
-          },
           "name": {
             "type": "string",
             "description": "Наименование клиента для отображения пользователю"
