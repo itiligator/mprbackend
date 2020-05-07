@@ -30,16 +30,16 @@ def create_user_profile(sender, instance, created, **kwargs):
         UserProfile.objects.create(user=instance)
 
 
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def save_user_profile(sender, instance, **kwargs):
-    instance.userprofile.save()
+# @receiver(post_save, sender=settings.AUTH_USER_MODEL)
+# def save_user_profile(sender, instance, **kwargs):
+#     instance.userprofile.save()
 
 
 class Visit(models.Model):
     UUID = models.CharField(max_length=36)
     date = models.DateField()
     database = models.BooleanField(default=True)
-    client_ID = models.CharField(max_length=200)
+    client_INN = models.CharField(max_length=200)
     payment = models.FloatField(null=True, blank=True)
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     processed = models.BooleanField(default=False)

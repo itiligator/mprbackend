@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.utils import timezone
 
-from .models import Order
+from .models import Order, Visit
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 
@@ -252,7 +252,6 @@ def clients(request):
     if request.method == 'GET':
         try:
             with open(clients_path, 'r', encoding="utf-8") as f:
-                print(request.query_params)
                 inn = request.query_params.get('inn')
                 client_type = request.query_params.get('clientType')
                 price_type = request.query_params.get('priceType')
@@ -289,10 +288,62 @@ def clients(request):
     else:
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-@api_view(['GET', 'POST'])
+
+def visit_dict(pk):
+    pass
+
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def visits(request):
     if request.method == 'GET':
+        # собираем в кучку параметры запроса
+        # ВНИМАНИЕ! лютый говнокод
+        # TODO: переписать по-человечески выборку из визитов
+        manager = None
+        if request.user.userprofile.role == 'MPR':
+            manager = User.objects.get(userprofile__manager_ID=request.user.userprofile.manager_ID)
+        else:
+            managerID = request.query_params.get('managerID', None)
+            if managerID:
+                try:
+                    manager = User.objects.get(userprofile__manager_ID=managerID)
+                except User.DoesNotExist:
+                    return Response({}, status=status.HTTP_204_NO_CONTENT)
+        processed = request.query_params.get('processed', None)
+        invoice = request.query_params.get('invoice', None)
+        visit_status = request.query_params.get('status', None)
+        client_inn = request.query_params.get('clientINN', None)
+        date = request.query_params.get('date', None)
+        # делаем последовательную фильтрацию
+        # потому что https://docs.djangoproject.com/en/3.0/topics/db/queries/#querysets-are-lazy
+        # и это ничего не стоит
+        q = Visit.objects.all()
+        if manager:
+            q = q.filter(manager=manager)
+        if processed:
+            processed = True if (processed == "true" or processed == "True") else False
+            q = q.filter(processed=processed)
+        if invoice:
+            invoice = True if (invoice == "true" or invoice == "True") else False
+            q = q.filter(invoice=invoice)
+        if visit_status:
+            q = q.filter(status=visit_status)
+        if client_inn:
+            q = q.filter(client_INN=client_inn)
+        if date:
+            q = q.filter(date=date)
+        print(len(q))
+
+        return Response({}, status=status.HTTP_501_NOT_IMPLEMENTED)
+    return Response({}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def visit(request, uuid):
+    if request.method == 'GET':
+        print(uuid)
         return Response({}, status=status.HTTP_501_NOT_IMPLEMENTED)
     elif request.method == 'PUT':
         return Response({}, status=status.HTTP_501_NOT_IMPLEMENTED)
