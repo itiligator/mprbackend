@@ -253,7 +253,7 @@ def clients(request):
         try:
             with open(clients_path, 'r', encoding="utf-8") as f:
                 print(request.query_params)
-                client_id = request.query_params.get('ID')
+                inn = request.query_params.get('inn')
                 client_type = request.query_params.get('clientType')
                 price_type = request.query_params.get('priceType')
                 client_status = request.query_params.get('status')
@@ -262,8 +262,8 @@ def clients(request):
                 else:
                     manager = request.query_params.get('managerID')
                 json_data = json.loads(f.read())
-                if client_id:
-                    json_data = [x for x in json_data if x['ID'] == client_id]
+                if inn:
+                    json_data = [x for x in json_data if x['inn'] == inn]
                 if client_type:
                     json_data = [x for x in json_data if x['clientType'] == client_type]
                 if price_type:
