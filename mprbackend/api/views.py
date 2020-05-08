@@ -67,14 +67,14 @@ prices_schema = {
                 "type": "string",
                 "description": "Тип цены"
             },
-            "price_0": {
+            "amount": {
                 "type": "string",
-                "description": "Цена в рублях 2"
+                "description": "Цена в рублях"
             },
-            "price_1": {
-                "type": "string",
-                "description": "Цена в рублях 1"
-            }
+            "dataBase": {
+                "description": "Индикатор базы данных",
+                "type": "boolean"
+              }
         },
         "required": [
             "productItem",
