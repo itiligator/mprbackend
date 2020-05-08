@@ -1,18 +1,16 @@
+import json
 import os
-from django.contrib.auth.models import User
+
 import jsonschema
-from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.http import JsonResponse
 from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.utils import timezone
 
 from .models import Order, Visit
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import api_view, permission_classes
-
-import json
-
-from django.conf import settings
 
 products_path = os.path.join(settings.BASE_DIR, "static", "products.json")
 products_schema = {
@@ -74,7 +72,7 @@ prices_schema = {
             "dataBase": {
                 "description": "Индикатор базы данных",
                 "type": "boolean"
-              }
+            }
         },
         "required": [
             "productItem",
@@ -94,85 +92,182 @@ clients_schema = {
         "description": "Данные клиента",
         "x-examples": {},
         "properties": {
-          "name": {
-            "type": "string",
-            "description": "Наименование клиента для отображения пользователю"
-          },
-          "inn": {
-            "type": "string",
-            "description": "ИНН"
-          },
-          "clientType": {
-            "type": "string",
-            "description": "Тип клиента (хорека, драфт, магазин etc)"
-          },
-          "priceType": {
-            "type": "string",
-            "description": "Тип цен для клиента"
-          },
-          "delay": {
-            "type": "integer",
-            "default": 0,
-            "description": "Отсрочка по договору",
-            "format": "int32",
-            "example": 0,
-            "minimum": 0,
-            "maximum": 45
-          },
-          "limit": {
-            "type": "integer",
-            "default": 0,
-            "description": "Лимит",
-            "format": "int64",
-            "example": 0,
-            "minimum": 0,
-            "maximum": 100000
-          },
-          "authorizedManagersID": {
-            "type": "array",
-            "description": "Массив ID менеджеров, для которых доступен клиент",
-            "items": {
-              "type": "string"
+            "name": {
+                "type": "string",
+                "description": "Наименование клиента для отображения пользователю"
+            },
+            "inn": {
+                "type": "string",
+                "description": "ИНН"
+            },
+            "clientType": {
+                "type": "string",
+                "description": "Тип клиента (хорека, драфт, магазин etc)"
+            },
+            "priceType": {
+                "type": "string",
+                "description": "Тип цен для клиента"
+            },
+            "delay": {
+                "type": "integer",
+                "default": 0,
+                "description": "Отсрочка по договору",
+                "format": "int32",
+                "example": 0,
+                "minimum": 0,
+                "maximum": 45
+            },
+            "limit": {
+                "type": "integer",
+                "default": 0,
+                "description": "Лимит",
+                "format": "int64",
+                "example": 0,
+                "minimum": 0,
+                "maximum": 100000
+            },
+            "authorizedManagersID": {
+                "type": "array",
+                "description": "Массив ID менеджеров, для которых доступен клиент",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "email": {
+                "type": "string",
+                "format": "email"
+            },
+            "phone": {
+                "type": "string"
+            },
+            "manager": {
+                "type": "string"
+            },
+            "longitude": {
+                "type": "string"
+            },
+            "latitude": {
+                "type": "string"
+            },
+            "status": {
+                "type": "boolean",
+                "default": "1",
+                "description": "Действует/не действует"
+            },
+            "dataBase": {
+                "type": "boolean",
+                "default": "0"
             }
-          },
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "manager": {
-            "type": "string"
-          },
-          "longitude": {
-            "type": "string"
-          },
-          "latitude": {
-            "type": "string"
-          },
-          "status": {
-            "type": "boolean",
-            "default": "1",
-            "description": "Действует/не действует"
-          },
-          "dataBase": {
-            "type": "boolean",
-            "default": "0"
-          }
         },
         "required": [
-          "clientID",
-          "name",
-          "clientType",
-          "priceType",
-          "delay",
-          "authorizedManagersID",
-          "status",
-          "dataBase"
+            "clientID",
+            "name",
+            "clientType",
+            "priceType",
+            "delay",
+            "authorizedManagersID",
+            "status",
+            "dataBase"
         ]
-      },
+    },
 }
+
+visit_schema = {
+    "title": "Визит",
+    "type": "object",
+    "description": "Данные по визитам",
+    "properties": {
+        "UUID": {
+            "type": "string",
+            "description": "Уникальный идентификатор визита. Генерируется приложением МПР или офиса и никогда не изменяется",
+            "format": "uuid"
+        },
+        "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Дата совершения визита. Генерируется приложением МПР и никогда не изменяется"
+        },
+        "dataBase": {
+            "type": "boolean"
+        },
+        "payment": {
+            "type": "integer",
+            "description": "Сумма денег, принятых в счет оплаты. Генерируется приложением МПР, обновляется "
+                           "приложением офиса "
+        },
+        "orders": {
+            "type": "array",
+            "description": "Массив данных о заказанных продуктах, остатке, продажах",
+            "items": {
+                "title": "Объект заказа",
+                "type": "object",
+                "description": "Объект описания заказанного, рекомендованного к заказу, остаточного и отгруженного "
+                               "товара",
+                "properties": {
+                    "productItem": {
+                        "type": "string",
+                        "description": "Артикул продукта. Генерируется приложением МПР, никогда не изменяется"
+                    },
+                    "order": {
+                        "type": "integer",
+                        "description": "Заказанное количество продукта. Генерируется приложением МПР, изменяется "
+                                       "приложением офиса "
+                    },
+                    "delivered": {
+                        "description": "Количество поставленного продукт. По умолчанию установлено в 0, обновляется "
+                                       "со стороны 1С",
+                        "type": "integer"
+                    },
+                    "recommend": {
+                        "type": "integer",
+                        "description": "Рекомендованное к заказу количесво. Генерируется приложением МПР и никогда не "
+                                       "изменяется "
+                    },
+                    "balance": {
+                        "description": "Остаток продукта у клиента. Генерируется приложением МПР, изменяется "
+                                       "приложением офиса",
+                        "type": "integer"
+                    },
+                    "sales": {
+                        "type": "integer",
+                        "description": "Продажи продкукта. Генерируется приложением МПР, изменяется приложением офиса"
+                    }
+                },
+                "required": [
+                    "productItem"
+                ]
+            }
+        },
+        "processed": {
+            "type": "boolean",
+            "description": "Индикатор создания ПКО. По умолчанию установлен в false, устанавливается в true со "
+                           "стороны 1С при создании ПКО "
+        },
+        "status": {
+            "type": "integer",
+            "description": "Статус визита 0: не начат, 1: в работе, 2: завершен. Генерируется и обновляется "
+                           "приложениями МПР и офиса "
+        },
+        "managerID": {
+            "type": "string",
+            "description": "ID менеджера, который совершил (совершает) визит. Генерируется приложением МПР или офиса, "
+                           "никогда не изменяется "
+        },
+        "invoice": {
+            "type": "boolean",
+            "description": "Индикатор создания накладной. По умолчанию установлен в false, устанавливается в true со "
+                           "стороны 1С при создании накладной "
+        },
+        "clientINN": {
+            "type": "string",
+            "description": "ИНН клиента. Генерируется приложением МПР или офиса и никогда не изменяется"
+        },
+        "paymentPlan": {
+            "type": "integer"
+        }
+    }
+}
+
 
 # TODO: переписать функции. DRY!
 @api_view(['GET', 'POST'])
@@ -235,12 +330,16 @@ def prices(request):
 @permission_classes([IsAuthenticated])
 def users(request):
     if request.user.userprofile.role == 'MPR':
-        data = {'firstName': request.user.first_name, 'lastName': request.user.last_name, 'ID': request.user.userprofile.manager_ID}
+        data = {
+            'firstName': request.user.first_name,
+            'lastName': request.user.last_name,
+            'ID': request.user.userprofile.manager_ID
+        }
         return JsonResponse(data, safe=False)
     elif request.user.userprofile.role == 'OFFICE':
-        users = User.objects.filter(userprofile__role='MPR')
+        managers = User.objects.filter(userprofile__role='MPR')
         data = []
-        for user in users:
+        for user in managers:
             data.append({'firstName': user.first_name, 'lastName': user.last_name, 'ID': user.userprofile.manager_ID})
         return JsonResponse(data, safe=False)
     return Response({}, status=status.HTTP_403_FORBIDDEN)
@@ -289,10 +388,6 @@ def clients(request):
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-def visit_dict(pk):
-    pass
-
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def visits(request):
@@ -304,10 +399,10 @@ def visits(request):
         if request.user.userprofile.role == 'MPR':
             manager = User.objects.get(userprofile__manager_ID=request.user.userprofile.manager_ID)
         else:
-            managerID = request.query_params.get('managerID', None)
-            if managerID:
+            managerid = request.query_params.get('managerID', None)
+            if managerid:
                 try:
-                    manager = User.objects.get(userprofile__manager_ID=managerID)
+                    manager = User.objects.get(userprofile__manager_ID=managerid)
                 except User.DoesNotExist:
                     return Response({}, status=status.HTTP_204_NO_CONTENT)
         processed = request.query_params.get('processed', None)
@@ -333,18 +428,69 @@ def visits(request):
             q = q.filter(client_INN=client_inn)
         if date:
             q = q.filter(date=date)
-        print(len(q))
-
-        return Response({}, status=status.HTTP_501_NOT_IMPLEMENTED)
+        result = [v.to_dict() for v in q]
+        return JsonResponse(result, safe=False, status=status.HTTP_200_OK)
     return Response({}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def visit(request, uuid):
+
     if request.method == 'GET':
-        print(uuid)
-        return Response({}, status=status.HTTP_501_NOT_IMPLEMENTED)
+        try:
+            v = Visit.objects.get(UUID=uuid)
+        except Visit.DoesNotExist:
+            return Response("Visit not found", status=status.HTTP_404_NOT_FOUND)
+        if request.user.userprofile.role == 'MPR':
+            if request.user.userprofile.manager_ID == v.manager.userprofile.manager_ID:
+                return JsonResponse(v.to_dict(), safe=False, status=status.HTTP_200_OK)
+            else:
+                return Response("You don't have permissions to get visit", status=status.HTTP_403_FORBIDDEN)
+        else:
+            return JsonResponse(v.to_dict(), safe=False, status=status.HTTP_200_OK)
+
     elif request.method == 'PUT':
-        return Response({}, status=status.HTTP_501_NOT_IMPLEMENTED)
-    return Response({}, status=status.HTTP_501_NOT_IMPLEMENTED)
+        try:
+            v = Visit.objects.get(UUID=uuid)
+        except Visit.DoesNotExist:
+            if request.user.userprofile.role == 'MPR':
+                manager = request.user
+            elif request.data['managerID']:
+                try:
+                    manager = User.objects.get(userprofile__manger_ID=request.data['managerID'])
+                except User.DoesNotExist:
+                    return Response("Can't create visit: bad manger ID", status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response("Can't create visit: missing manger ID", status=status.HTTP_400_BAD_REQUEST)
+            if not request.data['clietnINN']:
+                return Response("Can't create visit: missing client INN", status=status.HTTP_400_BAD_REQUEST)
+            v = Visit.create(UUID=uuid, manager=manager, client_INN=request.data['clientINN'])
+
+        if (request.user.userprofile.role == 'MPR'
+            and request.user.userprofile.manager_ID == v.manager.userprofile.manager_ID
+            and v.status != 2) \
+                or request.user.userprofile.role == 'OFFICE' \
+                or request.user.userprofile.role == '1S':
+            try:
+                jsonschema.validate(instance=request.data, schema=visit_schema)
+                v.update_from_dict(request.data)
+            except jsonschema.exceptions.ValidationError:
+                return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+            except User.DoesNotExist:
+                return Response("Can't update visit: there is no manager with such ID, please try with another", status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(v.to_dict(), status=status.HTTP_200_OK)
+        else:
+            return Response("You don't have permissions to put visit", status=status.HTTP_403_FORBIDDEN)
+
+    elif request.method == 'DELETE':
+        try:
+            v = Visit.objects.get(UUID=uuid)
+        except Visit.DoesNotExist:
+            return Response("Visit not found", status=status.HTTP_404_NOT_FOUND)
+        if request.user.userprofile.role == 'OFFICE':
+            v.delete()
+            return Response("Visit have been deleted", status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response("You don't have permissions to delete visit", status=status.HTTP_403_FORBIDDEN)
+    return Response({}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
