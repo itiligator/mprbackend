@@ -458,14 +458,15 @@ def visit(request, uuid):
                 manager = request.user
             elif request.data['managerID']:
                 try:
-                    manager = User.objects.get(userprofile__manger_ID=request.data['managerID'])
+                    manager = User.objects.get(userprofile__manager_ID=request.data['managerID'])
                 except User.DoesNotExist:
                     return Response("Can't create visit: bad manger ID", status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response("Can't create visit: missing manger ID", status=status.HTTP_400_BAD_REQUEST)
-            if not request.data['clietnINN']:
+            try:
+                v = Visit.objects.create(UUID=uuid, manager=manager, client_INN=request.data['clientINN'])
+            except KeyError:
                 return Response("Can't create visit: missing client INN", status=status.HTTP_400_BAD_REQUEST)
-            v = Visit.create(UUID=uuid, manager=manager, client_INN=request.data['clientINN'])
 
         if (request.user.userprofile.role == 'MPR'
             and request.user.userprofile.manager_ID == v.manager.userprofile.manager_ID
