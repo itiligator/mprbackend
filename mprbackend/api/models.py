@@ -11,6 +11,7 @@ from django.dispatch import receiver
 # product_item: перечисление от 1 до N
 # client_type: перечисление от 1 до N
 # price_type: перечисление от 1 до N
+# visit.status: 0 - не начат, 1 - в работе, 2 - завершен
 # иные предположения:
 # роли пользователей: "MPR", "OFFICE", "1S"
 
@@ -47,6 +48,9 @@ class Visit(models.Model):
     processed = models.BooleanField(default=False)
     invoice = models.BooleanField(default=False)
     status = models.SmallIntegerField(default=-1)
+
+    def __str__(self):
+        return str(self.date) + ' ' + self.manager.first_name + ' ' + self.manager.last_name + ' в ' + self.client_INN
     
     def to_dict(self):
         result = {

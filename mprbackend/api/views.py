@@ -1,10 +1,13 @@
 import json
 import os
+import random
+import uuid
 
 import jsonschema
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import JsonResponse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -326,10 +329,11 @@ def prices(request):
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
+# TODO: сделать отдельную точку /users/me
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def users(request):
-    if request.user.userprofile.role == 'MPR':
+    if request.user.userprofile.role == 'MPR' or request.user.userprofile.role == '1S':
         data = {
             'firstName': request.user.first_name,
             'lastName': request.user.last_name,
@@ -413,7 +417,7 @@ def visits(request):
         # делаем последовательную фильтрацию
         # потому что https://docs.djangoproject.com/en/3.0/topics/db/queries/#querysets-are-lazy
         # и это ничего не стоит
-        q = Visit.objects.all()
+        q = Visit.objects.all().order_by('date')
         if manager:
             q = q.filter(manager=manager)
         if processed:
@@ -495,3 +499,65 @@ def visit(request, uuid):
         else:
             return Response("You don't have permissions to delete visit", status=status.HTTP_403_FORBIDDEN)
     return Response({}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def resetvisits(request):
+    if request.user.userprofile.role == 'MPR':
+        Visit.objects.filter(manager=User.objects.get(userprofile__manager_ID=request.user.userprofile.manager_ID)).delete()
+        date = timezone.now().date()
+        with open(clients_path, 'r', encoding="utf-8") as f:
+            clients = json.loads(f.read())
+        endedvisits = random.randint(2, 8)
+        plannedvisits = random.randint(13, 16) - endedvisits
+        for _ in range(plannedvisits): # запланированные на сегодня визиты
+            clientinn = random.choice(clients)['inn']
+            Visit.objects.create(
+                UUID=uuid.uuid4(),
+                manager=request.user,
+                client_INN=clientinn,
+                status=0, date=date,
+                payment_plan=random.randint(2000, 10000))
+        for _ in range(random.randint(10, 16)): # запланированные на неделю визиты
+            for days in range(1, 5):
+                clientinn = random.choice(clients)['inn']
+                Visit.objects.create(
+                    UUID=uuid.uuid4(),
+                    manager=request.user,
+                    client_INN=clientinn,
+                    status=0,
+                    date=date+timezone.timedelta(days=days),
+                    payment_plan=random.randint(2000,10000))
+        with open(products_path, 'r', encoding="utf-8") as f:
+            pr = json.loads(f.read())
+        for _ in range(endedvisits): # оконченные сегодня визиты
+            clientinn = random.choice(clients)['inn']
+            processed = bool(random.randint(0, 1))
+            payment = random.randint(2000, 10000)
+            v = Visit.objects.create(
+                UUID=uuid.uuid4(),
+                manager=request.user,
+                client_INN=clientinn,
+                status=2,
+                date=date,
+                payment=payment,
+                payment_plan=payment-random.randint(0,2000),
+                processed=processed,
+                invoice=processed
+            )
+            for product in pr:
+                order = random.randint(3, 15)
+                Order.objects.create(
+                    visit=v,
+                    product_item=product['item'],
+                    order=order,
+                    delivered=random.choice([0, order, order-1, order-2]) if processed else 0,
+                    recommend=random.choice([order, order-1, order-2]),
+                    balance=random.randint(0, 10),
+                    sales=random.randint(0, 15)
+                )
+    else:
+        Visit.objects.all().delete()
+
+    return Response("Visits have been reset", status=status.HTTP_200_OK)
