@@ -153,13 +153,14 @@ class Order(models.Model):
 class ChecklistQuestion(models.Model):
     UUID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     client_type = models.CharField(max_length=200)
-    text = models.TextField
+    text = models.TextField()
     active = models.BooleanField(default=True)
+    section = models.CharField(max_length=200)
 
 
 class ChecklistAnswer(models.Model):
     UUID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     question = models.ForeignKey(ChecklistQuestion, on_delete=models.CASCADE)
     visit = models.ForeignKey(Visit, on_delete=models.CASCADE)
-    answer1 = models.TextField
-    answer2 = models.TextField
+    answer1 = models.TextField(blank=True)
+    answer2 = models.TextField(blank=True)
