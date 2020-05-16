@@ -20,7 +20,7 @@ import uuid
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True)
     role = models.CharField(max_length=20)
-    manager_ID = models.CharField(max_length=200, null=True, blank=True)
+    manager_ID = models.CharField(max_length=200, null=True, blank=True, unique=True)
 
     def __str__(self):
         onesid = (', ID в 1С: ' + self.manager_ID if self.manager_ID else "")
