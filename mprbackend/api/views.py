@@ -509,6 +509,7 @@ def resetvisits(request):
         date = timezone.now().date()
         with open(clients_path, 'r', encoding="utf-8") as f:
             clients = json.loads(f.read())
+            clients = [x for x in clients if request.user.userprofile.manager_ID in x['authorizedManagersID']]
         endedvisits = random.randint(2, 8)
         plannedvisits = random.randint(13, 16) - endedvisits
         for _ in range(plannedvisits): # запланированные на сегодня визиты

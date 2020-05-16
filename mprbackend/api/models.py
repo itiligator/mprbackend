@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import uuid
 
 
 # временные предположения относительно уникальных идентификаторов и типов, получаемых в данных от 1С:
@@ -82,58 +83,60 @@ class Visit(models.Model):
         return result
 
     def update_from_dict(self, data):
+        if 'dataBase' in data:
+            if data['dataBase'] == 'true':
+                self.database = True
+            elif data['dataBase'] == 'false':
+                self.database = False
 
-        if data['dataBase'] == 'true':
-            self.database = True
-        elif data['dataBase'] == 'false':
-            self.database = False
+        if 'invoice' in data:
+            if data['invoice'] == 'true':
+                self.invoice = True
+            elif data['invoice'] == 'false':
+                self.invoice = False
 
-        if data['invoice'] == 'true':
-            self.invoice = True
-        elif data['invoice'] == 'false':
-            self.invoice = False
+        if 'processed' in data:
+            if data['processed'] == 'true':
+                self.processed = True
+            elif data['processed'] == 'false':
+                self.processed = False
 
-        if data['processed'] == 'true':
-            self.processed = True
-        elif data['processed'] == 'false':
-            self.processed = False
-
-        if data['status']:
+        if 'status' in data:
             self.status = int(data['status'])
 
-        if data['managerID']:
+        if 'managerID' in data:
             self.manager = User.objects.get(userprofile__manager_ID=data['managerID'])
 
-        if data['date']:
+        if 'date' in data:
             self.date = data['date']
 
-        if data['payment']:
+        if 'payment' in data:
             self.payment = int(data['payment'])
 
-        if data['paymentPlan']:
+        if 'paymentPlan' in data:
             self.payment_plan = int(data['paymentPlan'])
 
-        if data['clientINN']:
+        if 'clientINN' in data:
             self.client_INN = data['clientINN']
 
         self.save()
 
-        if data['orders']:
+        if 'orders' in data:
             orders = data['orders']
             for o in orders:
                 try:
                     dbo = Order.objects.get(visit=self, product_item=o['productItem'])
                 except Order.DoesNotExist:
                     dbo = Order(visit=self, product_item=o['productItem'])
-                if o['order']:
+                if 'order' in o:
                     dbo.order = int(o['order'])
-                if o['sales']:
+                if 'sales' in o:
                     dbo.order = int(o['sales'])
-                if o['delivered']:
+                if 'delivered' in o:
                     dbo.order = int(o['delivered'])
-                if o['recommend']:
+                if 'recommend' in o:
                     dbo.order = int(o['recommend'])
-                if o['balance']:
+                if 'balance' in o:
                     dbo.order = int(o['balance'])
                 dbo.save()
 
@@ -146,3 +149,17 @@ class Order(models.Model):
     recommend = models.SmallIntegerField(null=True, blank=True, default=0)
     balance = models.SmallIntegerField(null=True, blank=True, default=0)
     sales = models.SmallIntegerField(null=True, blank=True, default=0)
+
+class ChecklistQuestion(models.Model):
+    UUID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    client_type = models.CharField(max_length=200)
+    text = models.TextField
+    active = models.BooleanField(default=True)
+
+
+class ChecklistAnswer(models.Model):
+    UUID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    question = models.ForeignKey(ChecklistQuestion, on_delete=models.CASCADE)
+    visit = models.ForeignKey(Visit, on_delete=models.CASCADE)
+    answer1 = models.TextField
+    answer2 = models.TextField
