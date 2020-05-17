@@ -150,12 +150,16 @@ class Order(models.Model):
     balance = models.SmallIntegerField(null=True, blank=True, default=0)
     sales = models.SmallIntegerField(null=True, blank=True, default=0)
 
+
 class ChecklistQuestion(models.Model):
     UUID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     client_type = models.CharField(max_length=200)
     text = models.TextField()
     active = models.BooleanField(default=True)
     section = models.CharField(max_length=200)
+
+    def __str__(self):
+        return '"' + self.text + '"' + ' в разделе ' + '"' + self.section + '"' + ' для клиентов ' + '"' + self.client_type + '"'
 
 
 class ChecklistAnswer(models.Model):
