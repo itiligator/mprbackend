@@ -159,7 +159,7 @@ class ChecklistQuestion(models.Model):
     section = models.CharField(max_length=200)
 
     def __str__(self):
-        return '"' + self.text + '"' + ' в разделе ' + '"' + self.section + '"' + ' для клиентов ' + '"' + self.client_type + '"'
+        return '"' + self.text + '" в разделе "' + self.section + '" для клиентов "' + self.client_type + '" ' + str(self.UUID)
 
 
 class ChecklistAnswer(models.Model):

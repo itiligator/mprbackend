@@ -3,6 +3,7 @@ from .models import ChecklistQuestion
 
 
 class ChecklistQuestionSerializer(serializers.ModelSerializer):
+    clientType = serializers.CharField(source='client_type')
     class Meta:
         model = ChecklistQuestion
-        fields = ['UUID', 'client_type', 'text', 'active', 'section']
+        fields = ['UUID', 'clientType', 'text', 'active', 'section']

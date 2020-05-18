@@ -9,6 +9,7 @@ urlpatterns = [
     path('visits', views.visits, name='visits'),
     path('resetvisits', views.resetvisits, name='resetvisits'),
     path('visits/<uuid:uuid>', views.visit, name='visit'),
+    path('checklistsquestions', views.checklistsquestions, name='checklistsquestions'),
     # path('clients', views.clientsjson, name='clientsjson'),
     # path('orderlist', views.orderlist, name='orderlist'),
     # path('getorder/<int:pk>', views.getorder, name='getorder'),

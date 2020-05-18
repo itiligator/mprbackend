@@ -12,8 +12,10 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from .serializers import ChecklistQuestionSerializer
+from rest_framework.parsers import JSONParser
 
-from .models import Order, Visit
+from .models import Order, Visit, ChecklistQuestion
 
 products_path = os.path.join(settings.BASE_DIR, "static", "products.json")
 products_schema = {
@@ -562,3 +564,25 @@ def resetvisits(request):
         Visit.objects.all().delete()
 
     return Response("Visits have been reset", status=status.HTTP_200_OK)
+
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def checklistsquestions(request):
+    if request.method == 'GET':
+        questions = ChecklistQuestion.objects.all()
+        serializer = ChecklistQuestionSerializer(questions, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    if request.method == 'PUT':
+        data = JSONParser().parse(request)
+        try:
+            instance = ChecklistQuestion.objects.get(UUID=data['UUID'])
+        except ChecklistQuestion.DoesNotExist:
+            instance = None
+        serializer = ChecklistQuestionSerializer(instance=instance, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
