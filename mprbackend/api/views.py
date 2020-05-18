@@ -14,6 +14,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .serializers import ChecklistQuestionSerializer
 from rest_framework.parsers import JSONParser
+from django.shortcuts import get_object_or_404
 
 from .models import Order, Visit, ChecklistQuestion
 
@@ -566,13 +567,18 @@ def resetvisits(request):
     return Response("Visits have been reset", status=status.HTTP_200_OK)
 
 
-@api_view(['GET', 'PUT'])
+@api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
-def checklistsquestions(request):
+def checklistsquestions(request, uuid=None):
     if request.method == 'GET':
-        questions = ChecklistQuestion.objects.all()
-        serializer = ChecklistQuestionSerializer(questions, many=True)
-        return JsonResponse(serializer.data, safe=False)
+        if uuid:
+            question = get_object_or_404(ChecklistQuestion, UUID=uuid)
+            serializer = ChecklistQuestionSerializer(question)
+            return JsonResponse(serializer.data, safe=False)
+        else:
+            questions = ChecklistQuestion.objects.all()
+            serializer = ChecklistQuestionSerializer(questions, many=True)
+            return JsonResponse(serializer.data, safe=False)
     if request.method == 'PUT':
         data = JSONParser().parse(request)
         try:
@@ -584,5 +590,10 @@ def checklistsquestions(request):
             serializer.save()
             return JsonResponse(serializer.data, status=status.HTTP_200_OK)
         return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    if request.method == 'DELETE':
+        question = get_object_or_404(ChecklistQuestion, UUID=uuid)
+        question.delete()
+        return Response('Question has been deleted', status=status.HTTP_204_NO_CONTENT)
+
 
 

@@ -168,3 +168,7 @@ class ChecklistAnswer(models.Model):
     visit = models.ForeignKey(Visit, on_delete=models.CASCADE)
     answer1 = models.TextField(blank=True)
     answer2 = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = [['visit', 'question']]
+        order_with_respect_to = 'visit'
