@@ -306,8 +306,7 @@ checklistanswers_schema = {
         },
         "required": [
           "questionUUID",
-          "visitUUID",
-          "answer1"
+          "visitUUID"
         ]
       }
 }
@@ -679,6 +678,7 @@ def checklistanswers(request):
         return JsonResponse(result, safe=False, status=status.HTTP_200_OK)
 
     if request.method == 'POST':
+        print(request.data)
         try:
             jsonschema.validate(instance=request.data, schema=checklistanswers_schema)
         except jsonschema.exceptions.ValidationError as e:
@@ -699,8 +699,8 @@ def checklistanswers(request):
                     # UUID=answer['UUID'],
                     question=q,
                     visit=v,
-                    answer1=answer['answer1'],
-                    answer2=answer['answer2']
+                    answer1=str(answer.get('answer1', '')),
+                    answer2=answer.get('answer2', '')
                 )
             except Exception as exception:
                 print('creation')
