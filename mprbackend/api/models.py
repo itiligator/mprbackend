@@ -172,3 +172,15 @@ class ChecklistAnswer(models.Model):
     class Meta:
         unique_together = [['visit', 'question']]
         order_with_respect_to = 'visit'
+
+    def to_dict(self):
+        result = {
+            'UUID': self.UUID,
+            'questionUUID': self.question.UUID,
+            'visitUUID': self.visit.UUID
+        }
+        if self.answer1:
+            result['answer1'] = self.answer1
+        if self.answer2:
+            result['answer2'] = self.answer2
+        return result

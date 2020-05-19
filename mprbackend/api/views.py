@@ -16,7 +16,7 @@ from .serializers import ChecklistQuestionSerializer
 from rest_framework.parsers import JSONParser
 from django.shortcuts import get_object_or_404
 
-from .models import Order, Visit, ChecklistQuestion
+from .models import Order, Visit, ChecklistQuestion, ChecklistAnswer
 
 products_path = os.path.join(settings.BASE_DIR, "static", "products.json")
 products_schema = {
@@ -274,6 +274,44 @@ visit_schema = {
     }
 }
 
+checklistanswers_schema = {
+    "type": "array",
+    "items":
+    {
+        "type": "object",
+        "properties": {
+          "questionUUID": {
+            "type": "string",
+            "description": "UUID вопроса",
+            "format": "uuid"
+          },
+          "visitUUID": {
+            "type": "string",
+            "description": "UUID визита, в котором был дан ответ",
+            "format": "uuid"
+          },
+          "answer1": {
+            "type": "string",
+            "description": "Ответ на вопрос/количество"
+          },
+          "answer2": {
+            "type": "string",
+            "description": "Примечание/цена"
+          },
+          "UUID": {
+            "type": "string",
+            "description": "UUID ответа",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "questionUUID",
+          "visitUUID",
+          "answer1"
+        ]
+      }
+}
+
 
 # TODO: переписать функции. DRY!
 @api_view(['GET', 'POST'])
@@ -442,11 +480,11 @@ def visits(request):
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
-def visit(request, uuid):
+def visit(request, vuuid):
 
     if request.method == 'GET':
         try:
-            v = Visit.objects.get(UUID=uuid)
+            v = Visit.objects.get(UUID=vuuid)
         except Visit.DoesNotExist:
             return Response("Visit not found", status=status.HTTP_404_NOT_FOUND)
         if request.user.userprofile.role == 'MPR':
@@ -459,7 +497,7 @@ def visit(request, uuid):
 
     elif request.method == 'PUT':
         try:
-            v = Visit.objects.get(UUID=uuid)
+            v = Visit.objects.get(UUID=vuuid)
         except Visit.DoesNotExist:
             if request.user.userprofile.role == 'MPR':
                 manager = request.user
@@ -471,7 +509,7 @@ def visit(request, uuid):
             else:
                 return Response("Can't create visit: missing manger ID", status=status.HTTP_400_BAD_REQUEST)
             try:
-                v = Visit.objects.create(UUID=uuid, manager=manager, client_INN=request.data['clientINN'])
+                v = Visit.objects.create(UUID=vuuid, manager=manager, client_INN=request.data['clientINN'])
             except KeyError:
                 return Response("Can't create visit: missing client INN", status=status.HTTP_400_BAD_REQUEST)
 
@@ -493,7 +531,7 @@ def visit(request, uuid):
 
     elif request.method == 'DELETE':
         try:
-            v = Visit.objects.get(UUID=uuid)
+            v = Visit.objects.get(UUID=vuuid)
         except Visit.DoesNotExist:
             return Response("Visit not found", status=status.HTTP_404_NOT_FOUND)
         if request.user.userprofile.role == 'OFFICE':
@@ -536,7 +574,9 @@ def resetvisits(request):
         with open(products_path, 'r', encoding="utf-8") as f:
             pr = json.loads(f.read())
         for _ in range(endedvisits): # оконченные сегодня визиты
-            clientinn = random.choice(clients)['inn']
+            client = random.choice(clients)
+            clientinn = client['inn']
+            clientType = client['clientType']
             processed = bool(random.randint(0, 1))
             payment = random.randint(2000, 10000)
             v = Visit.objects.create(
@@ -546,7 +586,7 @@ def resetvisits(request):
                 status=2,
                 date=date,
                 payment=payment,
-                payment_plan=payment-random.randint(0,2000),
+                payment_plan=payment-random.randint(0, 2000),
                 processed=processed,
                 invoice=processed
             )
@@ -561,6 +601,14 @@ def resetvisits(request):
                     balance=random.randint(0, 10),
                     sales=random.randint(0, 15)
                 )
+            questions = ChecklistQuestion.objects.filter(client_type=clientType)
+            for question in questions:
+                ChecklistAnswer.objects.create(
+                    visit=v,
+                    question=question,
+                    answer1=str(random.randint(0, 10)),
+                    answer2=str(random.randint(0, 10))
+                )
     else:
         Visit.objects.all().delete()
 
@@ -569,10 +617,10 @@ def resetvisits(request):
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
-def checklistsquestions(request, uuid=None):
+def checklistsquestions(request, quuid=None):
     if request.method == 'GET':
-        if uuid:
-            question = get_object_or_404(ChecklistQuestion, UUID=uuid)
+        if quuid:
+            question = get_object_or_404(ChecklistQuestion, UUID=quuid)
             serializer = ChecklistQuestionSerializer(question)
             return JsonResponse(serializer.data, safe=False)
         else:
@@ -591,9 +639,71 @@ def checklistsquestions(request, uuid=None):
             return JsonResponse(serializer.data, status=status.HTTP_200_OK)
         return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     if request.method == 'DELETE':
-        question = get_object_or_404(ChecklistQuestion, UUID=uuid)
+        question = get_object_or_404(ChecklistQuestion, UUID=quuid)
         question.delete()
         return Response('Question has been deleted', status=status.HTTP_204_NO_CONTENT)
 
 
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def checklistanswers(request):
+    if request.method == 'GET':
+        q = ChecklistAnswer.objects.all()
+
+        client_type = request.query_params.get('clientType', None)
+        visitUUID = request.query_params.get('visit', None)
+        client_INN = request.query_params.get('client', None)
+        questionUUID = request.query_params.get('question', None)
+
+        if visitUUID:
+            try:
+                v = Visit.objects.get(UUID=visitUUID)
+            except Visit.DoesNotExist:
+                return Response('Bad visit UUID', status=status.HTTP_400_BAD_REQUEST)
+            q = q.filter(visit=v)
+
+        # if client_type:
+        #     q = q.filter(visit__client_type=client_type)
+
+        if client_INN:
+            q = q.filter(visit__client_INN=client_INN)
+
+        if questionUUID:
+            try:
+                question = ChecklistQuestion(UUID=questionUUID)
+            except ChecklistQuestion.DoesNotExist:
+                return Response('Bad checklist question UUID', status=status.HTTP_400_BAD_REQUEST)
+            q = q.filter(question=question)
+
+        result = [a.to_dict() for a in q]
+        return JsonResponse(result, safe=False, status=status.HTTP_200_OK)
+
+    if request.method == 'POST':
+        try:
+            jsonschema.validate(instance=request.data, schema=checklistanswers_schema)
+        except jsonschema.exceptions.ValidationError as e:
+            return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+        for answer in request.data:
+            try:
+                v = Visit.objects.get(UUID=answer['visitUUID'])
+            except Exception as exception:
+                print('visit')
+                print(exception)
+            try:
+                q = ChecklistQuestion.objects.get(UUID=answer['questionUUID'])
+            except Exception as exception:
+                print('ch quest')
+                print(exception)
+            try:
+                ChecklistAnswer.objects.create(
+                    UUID=answer['UUID'],
+                    question=q,
+                    visit=v,
+                    answer1=answer['answer1'],
+                    answer2=answer['answer2']
+                )
+            except Exception as exception:
+                print('creation')
+                print(exception)
+        return Response('OK', status=status.HTTP_200_OK)
 
