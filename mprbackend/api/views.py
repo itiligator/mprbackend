@@ -696,7 +696,7 @@ def checklistanswers(request):
                 print(exception)
             try:
                 ChecklistAnswer.objects.create(
-                    UUID=answer['UUID'],
+                    # UUID=answer['UUID'],
                     question=q,
                     visit=v,
                     answer1=answer['answer1'],
