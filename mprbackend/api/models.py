@@ -45,10 +45,11 @@ class Visit(models.Model):
     client_INN = models.CharField(max_length=200)
     payment = models.FloatField(null=True, blank=True)
     payment_plan = models.FloatField(null=True, blank=True)
-    manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='manager')
     processed = models.BooleanField(default=False)
     invoice = models.BooleanField(default=False)
     status = models.SmallIntegerField(default=-1)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='author')
 
     def __str__(self):
         return str(self.date) + ' ' + self.manager.first_name + ' ' + self.manager.last_name + ' в ' + self.client_INN
@@ -61,7 +62,9 @@ class Visit(models.Model):
             'processed': self.processed,
             'status': self.status,
             'invoice': self.invoice,
-            'managerID': self.manager.userprofile.manager_ID
+            'managerID': self.manager.userprofile.manager_ID,
+            'author': self.author.userprofile.manager_ID,
+            'id': self.pk
         }
         if self.date:
             result['date'] = self.date

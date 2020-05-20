@@ -270,6 +270,10 @@ visit_schema = {
         },
         "paymentPlan": {
             "type": "integer"
+        },
+        "id": {
+            "type": "integer",
+            "description": "Человекочитаемый ID"
         }
     }
 }
