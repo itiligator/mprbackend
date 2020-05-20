@@ -281,38 +281,41 @@ visit_schema = {
 checklistanswers_schema = {
     "type": "array",
     "items":
-    {
-        "type": "object",
-        "properties": {
-          "questionUUID": {
-            "type": "string",
-            "description": "UUID вопроса",
-            "format": "uuid"
-          },
-          "visitUUID": {
-            "type": "string",
-            "description": "UUID визита, в котором был дан ответ",
-            "format": "uuid"
-          },
-          "answer1": {
-            "type": "string",
-            "description": "Ответ на вопрос/количество"
-          },
-          "answer2": {
-            "type": "string",
-            "description": "Примечание/цена"
-          },
-          "UUID": {
-            "type": "string",
-            "description": "UUID ответа",
-            "format": "uuid"
-          }
-        },
-        "required": [
-          "questionUUID",
-          "visitUUID"
-        ]
-      }
+        {
+            "type": "object",
+            "properties": {
+                "questionUUID": {
+                    "type": "string",
+                    "description": "UUID вопроса",
+                    "format": "uuid"
+                },
+                "visitUUID": {
+                    "type": "string",
+                    "description": "UUID визита, в котором был дан ответ",
+                    "format": "uuid"
+                },
+                "answer1": {
+                    "type": [
+                        "string",
+                        "boolean"
+                    ],
+                    "description": "Ответ на вопрос/количество"
+                },
+                "answer2": {
+                    "type": "string",
+                    "description": "Примечание/цена"
+                },
+                "UUID": {
+                    "type": "string",
+                    "description": "UUID ответа",
+                    "format": "uuid"
+                }
+            },
+            "required": [
+                "questionUUID",
+                "visitUUID"
+            ]
+        }
 }
 
 
@@ -444,6 +447,7 @@ def visits(request):
         # ВНИМАНИЕ! лютый говнокод
         # TODO: переписать по-человечески выборку из визитов
         manager = None
+        author = None
         if request.user.userprofile.role == 'MPR':
             manager = User.objects.get(userprofile__manager_ID=request.user.userprofile.manager_ID)
         else:
@@ -453,17 +457,32 @@ def visits(request):
                     manager = User.objects.get(userprofile__manager_ID=managerid)
                 except User.DoesNotExist:
                     return Response({}, status=status.HTTP_204_NO_CONTENT)
+        authorID = request.query_params.get('author', None)
+        if authorID:
+            try:
+                author = User.objects.get(userprofile__manager_ID=authorID)
+            except User.DoesNotExist:
+                return Response({}, status=status.HTTP_204_NO_CONTENT)
+
         processed = request.query_params.get('processed', None)
         invoice = request.query_params.get('invoice', None)
         visit_status = request.query_params.get('status', None)
         client_inn = request.query_params.get('clientINN', None)
         date = request.query_params.get('date', None)
+        limit = request.query_params.get('limit', None)
+        if limit:
+            try:
+                limit = int(limit)
+            except ValueError:
+                return Response("Bad limit value", status=status.HTTP_400_BAD_REQUEST)
         # делаем последовательную фильтрацию
         # потому что https://docs.djangoproject.com/en/3.0/topics/db/queries/#querysets-are-lazy
         # и это ничего не стоит
         q = Visit.objects.all().order_by('date')
         if manager:
             q = q.filter(manager=manager)
+        if author:
+            q = q.filter(author=author)
         if processed:
             processed = True if (processed == "true" or processed == "True") else False
             q = q.filter(processed=processed)
@@ -476,6 +495,8 @@ def visits(request):
             q = q.filter(client_INN=client_inn)
         if date:
             q = q.filter(date=date)
+        if limit:
+            q = q[:limit]
         result = [v.to_dict() for v in q]
         return JsonResponse(result, safe=False, status=status.HTTP_200_OK)
     return Response({}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -484,7 +505,6 @@ def visits(request):
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def visit(request, vuuid):
-
     if request.method == 'GET':
         try:
             v = Visit.objects.get(UUID=vuuid)
@@ -512,7 +532,12 @@ def visit(request, vuuid):
             else:
                 return Response("Can't create visit: missing manger ID", status=status.HTTP_400_BAD_REQUEST)
             try:
-                v = Visit.objects.create(UUID=vuuid, manager=manager, client_INN=request.data['clientINN'])
+                v = Visit.objects.create(
+                    UUID=vuuid,
+                    manager=manager,
+                    author=request.user,
+                    client_INN=request.data['clientINN']
+                )
             except KeyError:
                 return Response("Can't create visit: missing client INN", status=status.HTTP_400_BAD_REQUEST)
 
@@ -527,7 +552,8 @@ def visit(request, vuuid):
             except jsonschema.exceptions.ValidationError:
                 return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
-                return Response("Can't update visit: there is no manager with such ID, please try with another", status=status.HTTP_400_BAD_REQUEST)
+                return Response("Can't update visit: there is no manager with such ID, please try with another",
+                                status=status.HTTP_400_BAD_REQUEST)
             return JsonResponse(v.to_dict(), status=status.HTTP_200_OK)
         else:
             return Response("You don't have permissions to put visit", status=status.HTTP_403_FORBIDDEN)
@@ -549,69 +575,113 @@ def visit(request, vuuid):
 @permission_classes([IsAuthenticated])
 def resetvisits(request):
     if request.user.userprofile.role == 'MPR':
-        Visit.objects.filter(manager=User.objects.get(userprofile__manager_ID=request.user.userprofile.manager_ID)).delete()
+        Visit.objects.filter(
+            manager=User.objects.get(userprofile__manager_ID=request.user.userprofile.manager_ID)).delete()
         date = timezone.now().date()
         with open(clients_path, 'r', encoding="utf-8") as f:
             clients = json.loads(f.read())
             clients = [x for x in clients if request.user.userprofile.manager_ID in x['authorizedManagersID']]
-        endedvisits = random.randint(2, 8)
-        plannedvisits = random.randint(13, 16) - endedvisits
-        for _ in range(plannedvisits): # запланированные на сегодня визиты
+        # endedvisits = random.randint(2, 8)
+        # plannedvisits = random.randint(13, 16) - endedvisits
+        for _ in range(random.randint(4, 8)):  # запланированные на сегодня визиты
             clientinn = random.choice(clients)['inn']
             Visit.objects.create(
                 UUID=uuid.uuid4(),
+                author=User.objects.get(pk=9),
                 manager=request.user,
                 client_INN=clientinn,
                 status=0, date=date,
                 payment_plan=random.randint(2000, 10000))
-        for _ in range(random.randint(10, 16)): # запланированные на неделю визиты
+        for _ in range(random.randint(10, 16)):  # запланированные на неделю визиты
             for days in range(1, 5):
                 clientinn = random.choice(clients)['inn']
                 Visit.objects.create(
                     UUID=uuid.uuid4(),
+                    author=User.objects.get(pk=9),
                     manager=request.user,
                     client_INN=clientinn,
                     status=0,
-                    date=date+timezone.timedelta(days=days),
-                    payment_plan=random.randint(2000,10000))
+                    date=date + timezone.timedelta(days=days),
+                    payment_plan=random.randint(2000, 10000))
         with open(products_path, 'r', encoding="utf-8") as f:
             pr = json.loads(f.read())
-        for _ in range(endedvisits): # оконченные сегодня визиты
-            client = random.choice(clients)
+        # for _ in range(endedvisits): # оконченные сегодня визиты
+        #     client = random.choice(clients)
+        #     clientinn = client['inn']
+        #     clientType = client['clientType']
+        #     processed = bool(random.randint(0, 1))
+        #     payment = random.randint(2000, 10000)
+        #     v = Visit.objects.create(
+        #         UUID=uuid.uuid4(),
+        #         manager=request.user,
+        #         client_INN=clientinn,
+        #         status=2,
+        #         date=date,
+        #         payment=payment,
+        #         payment_plan=payment-random.randint(0, 2000),
+        #         processed=processed,
+        #         invoice=processed
+        #     )
+        #     for product in pr:
+        #         order = random.randint(3, 15)
+        #         Order.objects.create(
+        #             visit=v,
+        #             product_item=product['item'],
+        #             order=order,
+        #             delivered=random.choice([0, order, order-1, order-2]) if processed else 0,
+        #             recommend=random.choice([order, order-1, order-2]),
+        #             balance=random.randint(0, 10),
+        #             sales=random.randint(0, 15)
+        #         )
+        #     questions = ChecklistQuestion.objects.filter(client_type=clientType)
+        #     for question in questions:
+        #         ChecklistAnswer.objects.create(
+        #             visit=v,
+        #             question=question,
+        #             answer1=str(random.randint(0, 10)),
+        #             answer2=str(random.randint(0, 10))
+        #         )
+
+        for client in clients:  # делаем по три оконченных визита для каждого клиента
             clientinn = client['inn']
             clientType = client['clientType']
-            processed = bool(random.randint(0, 1))
-            payment = random.randint(2000, 10000)
-            v = Visit.objects.create(
-                UUID=uuid.uuid4(),
-                manager=request.user,
-                client_INN=clientinn,
-                status=2,
-                date=date,
-                payment=payment,
-                payment_plan=payment-random.randint(0, 2000),
-                processed=processed,
-                invoice=processed
-            )
-            for product in pr:
-                order = random.randint(3, 15)
-                Order.objects.create(
-                    visit=v,
-                    product_item=product['item'],
-                    order=order,
-                    delivered=random.choice([0, order, order-1, order-2]) if processed else 0,
-                    recommend=random.choice([order, order-1, order-2]),
-                    balance=random.randint(0, 10),
-                    sales=random.randint(0, 15)
-                )
+            processed = True
             questions = ChecklistQuestion.objects.filter(client_type=clientType)
-            for question in questions:
-                ChecklistAnswer.objects.create(
-                    visit=v,
-                    question=question,
-                    answer1=str(random.randint(0, 10)),
-                    answer2=str(random.randint(0, 10))
+            for delta in range(3):
+                payment = random.randint(2000, 10000)
+                v = Visit.objects.create(
+                    UUID=uuid.uuid4(),
+                    manager=request.user,
+                    client_INN=clientinn,
+                    status=2,
+                    date=date - timezone.timedelta(days=(14*(delta+1) + random.randint(0, 5))),
+                    payment=payment,
+                    payment_plan=payment - random.randint(0, 2000),
+                    processed=processed,
+                    invoice=processed,
+                    author=User.objects.get(pk=9)
                 )
+
+                if clientType != 'Магазин':
+                    for product in pr:
+                        order = random.randint(3, 15)
+                        Order.objects.create(
+                            visit=v,
+                            product_item=product['item'],
+                            order=order,
+                            delivered=random.choice([0, order, order - 1, order - 2]) if processed else 0,
+                            recommend=random.choice([order, order - 1, order - 2]),
+                            balance=random.randint(0, 10),
+                            sales=random.randint(0, 15)
+                        )
+
+                for question in questions:
+                    ChecklistAnswer.objects.create(
+                        visit=v,
+                        question=question,
+                        answer1=str(random.randint(0, 10)),
+                        answer2=str(random.randint(0, 10))
+                    )
     else:
         Visit.objects.all().delete()
 
@@ -682,7 +752,6 @@ def checklistanswers(request):
         return JsonResponse(result, safe=False, status=status.HTTP_200_OK)
 
     if request.method == 'POST':
-        print(request.data)
         try:
             jsonschema.validate(instance=request.data, schema=checklistanswers_schema)
         except jsonschema.exceptions.ValidationError as e:
@@ -710,4 +779,3 @@ def checklistanswers(request):
                 print('creation')
                 print(exception)
         return Response('OK', status=status.HTTP_200_OK)
-
