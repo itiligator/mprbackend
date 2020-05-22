@@ -111,7 +111,6 @@ class Visit(models.Model):
             self.manager = User.objects.get(userprofile__manager_ID=data['managerID'])
 
         if ('author' in data) and data['author']:
-            print(data['author'])
             self.author = User.objects.get(userprofile__manager_ID=data['author'])
 
         if 'date' in data:
