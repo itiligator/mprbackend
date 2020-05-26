@@ -2,6 +2,7 @@ import json
 import os
 import random
 import uuid
+import time
 
 import jsonschema
 from django.conf import settings
@@ -197,7 +198,10 @@ visit_schema = {
             "type": "boolean"
         },
         "payment": {
-            "type": "integer",
+            "anyOf": [
+                {"type": "number"},
+                {"type": "null"}
+            ],
             "description": "Сумма денег, принятых в счет оплаты. Генерируется приложением МПР, обновляется "
                            "приложением офиса "
         },
@@ -376,7 +380,6 @@ def prices(request):
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-# TODO: сделать отдельную точку /users/me
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def users(request):
@@ -394,6 +397,17 @@ def users(request):
             data.append({'firstName': user.first_name, 'lastName': user.last_name, 'ID': user.userprofile.manager_ID})
         return JsonResponse(data, safe=False)
     return Response({}, status=status.HTTP_403_FORBIDDEN)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def usersme(request):
+    data = {
+        'firstName': request.user.first_name,
+        'lastName': request.user.last_name,
+        'ID': request.user.userprofile.manager_ID
+    }
+    return JsonResponse(data, safe=False)
 
 
 @api_view(['GET', 'POST'])
@@ -533,6 +547,7 @@ def visit(request, vuuid):
                 return Response("Can't create visit: missing manger ID", status=status.HTTP_400_BAD_REQUEST)
             try:
                 v = Visit.objects.create(
+                    date=timezone.now(),
                     UUID=vuuid,
                     manager=manager,
                     author=request.user,
@@ -549,7 +564,8 @@ def visit(request, vuuid):
             try:
                 jsonschema.validate(instance=request.data, schema=visit_schema)
                 v.update_from_dict(request.data)
-            except jsonschema.exceptions.ValidationError:
+            except jsonschema.exceptions.ValidationError as e:
+                print(e.message)
                 return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
                 return Response("Can't update visit: there is no manager with such ID, please try with another",
@@ -752,6 +768,7 @@ def checklistanswers(request):
         return JsonResponse(result, safe=False, status=status.HTTP_200_OK)
 
     if request.method == 'POST':
+        time.sleep(1)
         try:
             jsonschema.validate(instance=request.data, schema=checklistanswers_schema)
         except jsonschema.exceptions.ValidationError as e:

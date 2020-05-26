@@ -87,22 +87,25 @@ class Visit(models.Model):
 
     def update_from_dict(self, data):
         if 'dataBase' in data:
-            if data['dataBase'] == 'true':
-                self.database = True
-            elif data['dataBase'] == 'false':
-                self.database = False
+            self.database = data['dataBase']
+            # if data['dataBase'] == 'true':
+            #     self.database = True
+            # elif data['dataBase'] == 'false':
+            #     self.database = False
 
         if 'invoice' in data:
-            if data['invoice'] == 'true':
-                self.invoice = True
-            elif data['invoice'] == 'false':
-                self.invoice = False
+            self.database = data['invoice']
+            # if data['invoice'] == 'true':
+            #     self.invoice = True
+            # elif data['invoice'] == 'false':
+            #     self.invoice = False
 
         if 'processed' in data:
-            if data['processed'] == 'true':
-                self.processed = True
-            elif data['processed'] == 'false':
-                self.processed = False
+            self.database = data['processed']
+            # if data['processed'] == 'true':
+            #     self.processed = True
+            # elif data['processed'] == 'false':
+            #     self.processed = False
 
         if 'status' in data:
             self.status = int(data['status'])
@@ -116,7 +119,7 @@ class Visit(models.Model):
         if 'date' in data:
             self.date = data['date']
 
-        if 'payment' in data:
+        if 'payment' in data and data['payment'] != None:
             self.payment = int(data['payment'])
 
         if 'paymentPlan' in data:
