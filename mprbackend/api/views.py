@@ -508,7 +508,7 @@ def visits(request):
         if client_inn:
             q = q.filter(client_INN=client_inn)
         if date:
-            q = q.filter(date=date)
+            q = q.filter(date__gte=date)
         if limit:
             q = q[:limit]
         result = [v.to_dict() for v in q]
