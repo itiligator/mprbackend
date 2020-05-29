@@ -88,24 +88,12 @@ class Visit(models.Model):
     def update_from_dict(self, data):
         if 'dataBase' in data:
             self.database = data['dataBase']
-            # if data['dataBase'] == 'true':
-            #     self.database = True
-            # elif data['dataBase'] == 'false':
-            #     self.database = False
 
         if 'invoice' in data:
-            self.database = data['invoice']
-            # if data['invoice'] == 'true':
-            #     self.invoice = True
-            # elif data['invoice'] == 'false':
-            #     self.invoice = False
+            self.invoice = data['invoice']
 
         if 'processed' in data:
-            self.database = data['processed']
-            # if data['processed'] == 'true':
-            #     self.processed = True
-            # elif data['processed'] == 'false':
-            #     self.processed = False
+            self.processed = data['processed']
 
         if 'status' in data:
             self.status = int(data['status'])
