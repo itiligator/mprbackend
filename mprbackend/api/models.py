@@ -119,7 +119,7 @@ class Visit(models.Model):
         if 'date' in data:
             self.date = data['date']
 
-        if 'payment' in data and data['payment'] != None:
+        if 'payment' in data and data['payment'] is not None:
             self.payment = int(data['payment'])
 
         if 'paymentPlan' in data:

@@ -391,10 +391,15 @@ def users(request):
         }
         return JsonResponse(data, safe=False)
     elif request.user.userprofile.role == 'OFFICE':
-        managers = User.objects.filter(userprofile__role='MPR')
+        managers = User.objects.all()
         data = []
         for user in managers:
-            data.append({'firstName': user.first_name, 'lastName': user.last_name, 'ID': user.userprofile.manager_ID})
+            data.append({
+                'firstName': user.first_name,
+                'lastName': user.last_name,
+                'ID': user.userprofile.manager_ID,
+                'role': user.userprofile.role
+            })
         return JsonResponse(data, safe=False)
     return Response({}, status=status.HTTP_403_FORBIDDEN)
 
