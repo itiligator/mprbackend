@@ -53,7 +53,7 @@ class Visit(models.Model):
 
     def __str__(self):
         return str(self.date) + ' ' + self.manager.first_name + ' ' + self.manager.last_name + ' в ' + self.client_INN
-    
+
     def to_dict(self):
         result = {
             'UUID': self.UUID,
@@ -156,7 +156,8 @@ class ChecklistQuestion(models.Model):
     section = models.CharField(max_length=200)
 
     def __str__(self):
-        return '"' + self.text + '" в разделе "' + self.section + '" для клиентов "' + self.client_type + '" ' + str(self.UUID)
+        return '"' + self.text + '" в разделе "' + self.section + '" для клиентов "' + self.client_type + '" ' + str(
+            self.UUID)
 
 
 class ChecklistAnswer(models.Model):
@@ -181,3 +182,77 @@ class ChecklistAnswer(models.Model):
         if self.answer2:
             result['answer2'] = self.answer2
         return result
+
+
+class Client(models.Model):
+    name = models.CharField(max_length=200)
+    INN = models.CharField(max_length=12, unique=True)
+    client_type = models.CharField(max_length=100, blank=True, null=True)
+    price_type = models.CharField(max_length=100, blank=True, null=True)
+    delay = models.IntegerField(default=0)
+    limit = models.IntegerField(default=0)
+    authorized_managers = models.ManyToManyField(User, blank=True, related_name='authorized_managers')
+    email = models.CharField(max_length=50, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    manager = models.ForeignKey(User, blank=True, null=True, on_delete=models.DO_NOTHING, related_name='clientmanager')
+    status = models.BooleanField(default=True)
+    database = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'inn': self.INN,
+            'clientType': self.client_type,
+            'priceType': self.price_type,
+            'delay': self.delay,
+            'limit': self.limit,
+            'authorizedManagersID': list(self.authorized_managers.all().values_list('userprofile__manager_ID', flat=True)),
+            'email': self.email,
+            'phone': self.phone,
+            'status': self.status,
+            'dataBase': self.database,
+            'manager': '' if not self.manager else self.manager.userprofile.manager_ID
+        }
+
+    def update_from_dict(self, data):
+        if 'dataBase' in data:
+            self.database = data['dataBase']
+
+        if 'status' in data:
+            self.status = data['dataBase']
+
+        if 'name' in data:
+            self.name = data['name']
+
+        if 'inn' in data:
+            self.inn = data['inn']
+
+        if 'clientType' in data:
+            self.client_type = data['clientType']
+
+        if 'priceType' in data:
+            self.price_type = data['priceType']
+
+        if 'delay' in data:
+            self.delay = data['delay']
+
+        if 'limit' in data:
+            self.limit = data['limit']
+
+        if 'email' in data:
+            self.email = data['email']
+
+        if 'phone' in data:
+            self.phone = data['phone']
+
+        if 'manager' in data:
+            self.manager = User.objects.get(userprofile__manager_ID=data['manager'])
+
+        if 'authorizedManagersID' in data:
+            managers = User.objects.filter(userprofile__manager_ID__in=data['authorizedManagersID'])
+            self.authorized_managers.set(managers)
+
+        self.save()
