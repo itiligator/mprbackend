@@ -202,19 +202,25 @@ class Client(models.Model):
         return self.name
 
     def to_dict(self):
-        return {
+        res = {
             'name': self.name,
             'inn': self.INN,
             'clientType': self.client_type,
             'priceType': self.price_type,
             'delay': self.delay,
             'limit': self.limit,
-            'authorizedManagersID': list(self.authorized_managers.all().values_list('userprofile__manager_ID', flat=True)),
+            'authorizedManagersID': list(
+                self.authorized_managers.all().values_list('userprofile__manager_ID', flat=True)),
             'email': self.email,
             'phone': self.phone,
             'status': self.status,
             'dataBase': self.database,
             'manager': '' if not self.manager else self.manager.userprofile.manager_ID
+        }
+        return {
+            k: v
+            for k, v in res.items()
+            if v is not None
         }
 
     def update_from_dict(self, data):
