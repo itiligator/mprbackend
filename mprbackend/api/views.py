@@ -95,10 +95,6 @@ clients_path = os.path.join(settings.BASE_DIR, "static", "clients.json")
 clients_schema = {
     "type": "array",
     "items": {
-        "title": "Клиент",
-        "type": "object",
-        "description": "Данные клиента",
-        "x-examples": {},
         "properties": {
             "name": {
                 "type": "string",
@@ -149,7 +145,8 @@ clients_schema = {
                 "type": "string"
             },
             "manager": {
-                "type": "string"
+                "type": "string",
+                "description": "ID основного менеджера"
             },
             "longitude": {
                 "type": "string"
@@ -168,14 +165,8 @@ clients_schema = {
             }
         },
         "required": [
-            "clientID",
             "name",
-            "clientType",
-            "priceType",
-            "delay",
-            "authorizedManagersID",
-            "status",
-            "dataBase"
+            "inn"
         ]
     },
 }
@@ -416,7 +407,7 @@ def usersme(request):
     return JsonResponse(data, safe=False)
 
 
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def clients(request):
     if request.method == 'GET':
@@ -452,19 +443,24 @@ def clients(request):
         result = [c.to_dict() for c in q]
         return JsonResponse(result, safe=False, status=status.HTTP_200_OK)
 
-    elif request.method == 'POST':
-        if request.user.userprofile.role != '1S':
-            return Response("Only 1S can do it", status=status.HTTP_403_FORBIDDEN)
+    elif request.method == 'PUT':
+        if request.user.userprofile.role == 'MPR':
+            return Response("You can't do that", status=status.HTTP_403_FORBIDDEN)
         else:
             try:
                 jsonschema.validate(instance=request.data, schema=clients_schema)
-            except jsonschema.exceptions.ValidationError:
+            except jsonschema.exceptions.ValidationError as e:
+                print(e)
                 return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
 
-            with open(clients_path, 'w', encoding="utf-8") as f:
-                json.dump(request.data, f, ensure_ascii=False)
+            for c in request.data:
+                try:
+                    client = Client.objects.get(INN=c['inn'])
+                except Client.DoesNotExist:
+                    client = Client.objects.create(name=c['name'], INN=c['inn'])
+                client.update_from_dict(c)
 
-            return Response('Client list have been saved', status=status.HTTP_200_OK)
+            return Response('Client list have been putted', status=status.HTTP_200_OK)
     else:
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 

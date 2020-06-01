@@ -201,6 +201,12 @@ class Client(models.Model):
     def __str__(self):
         return self.name
 
+    def __save__(self, *args, **kwargs): # если менеджер не указан явно, то назначаем первого попавшегося из
+        # authorized_managers
+        if not self.manager and self.authorized_managers.len() > 0 and 'manager' not in kwargs:
+            self.manager = self.authorized_managers.all()[0]
+        super(Client, self).save(*args, **kwargs)
+
     def to_dict(self):
         res = {
             'name': self.name,
