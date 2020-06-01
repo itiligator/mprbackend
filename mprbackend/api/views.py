@@ -16,8 +16,9 @@ from rest_framework.response import Response
 from .serializers import ChecklistQuestionSerializer
 from rest_framework.parsers import JSONParser
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
-from .models import Order, Visit, ChecklistQuestion, ChecklistAnswer
+from .models import Order, Visit, ChecklistQuestion, ChecklistAnswer, Client
 
 products_path = os.path.join(settings.BASE_DIR, "static", "products.json")
 products_schema = {
@@ -419,30 +420,38 @@ def usersme(request):
 @permission_classes([IsAuthenticated])
 def clients(request):
     if request.method == 'GET':
-        try:
-            with open(clients_path, 'r', encoding="utf-8") as f:
-                inn = request.query_params.get('inn')
-                client_type = request.query_params.get('clientType')
-                price_type = request.query_params.get('priceType')
-                client_status = request.query_params.get('status')
-                if request.user.userprofile.role == 'MPR':
-                    manager = request.user.userprofile.manager_ID
-                else:
-                    manager = request.query_params.get('managerID')
-                json_data = json.loads(f.read())
-                if inn:
-                    json_data = [x for x in json_data if x['inn'] == inn]
-                if client_type:
-                    json_data = [x for x in json_data if x['clientType'] == client_type]
-                if price_type:
-                    json_data = [x for x in json_data if x['priceType'] == price_type]
-                if client_status:
-                    json_data = [x for x in json_data if str(x['status']).lower() == client_status]
-                if manager:
-                    json_data = [x for x in json_data if manager in x['authorizedManagersID']]
-                return JsonResponse(json_data, safe=False)
-        except FileNotFoundError:
-            return Response('No such file, please upload it first', status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        q = Client.objects.all()
+        manager = None
+
+        if request.user.userprofile.role == 'MPR':
+            manager = request.user
+        managerID = request.query_params.get('managerID', None)
+        if managerID:
+            try:
+                manager = User.objects.get(userprofile__manager_ID=managerID)
+            except User.DoesNotExist:
+                return Response("Can't find manager with such ID", status=status.HTTP_400_BAD_REQUEST)
+
+        inn = request.query_params.get('inn', None)
+        client_type = request.query_params.get('clientType', None)
+        price_type = request.query_params.get('priceType', None)
+        client_status = request.query_params.get('status', None)
+
+        if inn:
+            q = q.filter(INN=inn)
+        if client_type:
+            q = q.filter(client_type=client_type)
+        if price_type:
+            q = q.filter(price_type=price_type)
+        if manager:
+            q = q.filter(Q(authorized_managers=manager) | Q(manager=manager)).distinct()
+        if client_status:
+            client_status = True if (client_status == "true" or client_status == "True") else False
+            q = q.filter(status=client_status)
+
+        result = [c.to_dict() for c in q]
+        return JsonResponse(result, safe=False, status=status.HTTP_200_OK)
+
     elif request.method == 'POST':
         if request.user.userprofile.role != '1S':
             return Response("Only 1S can do it", status=status.HTTP_403_FORBIDDEN)
@@ -451,8 +460,10 @@ def clients(request):
                 jsonschema.validate(instance=request.data, schema=clients_schema)
             except jsonschema.exceptions.ValidationError:
                 return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+
             with open(clients_path, 'w', encoding="utf-8") as f:
                 json.dump(request.data, f, ensure_ascii=False)
+
             return Response('Client list have been saved', status=status.HTTP_200_OK)
     else:
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
