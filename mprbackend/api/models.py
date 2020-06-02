@@ -200,12 +200,14 @@ class Client(models.Model):
 
     def __str__(self):
         return self.name
-
-    def __save__(self, *args, **kwargs): # если менеджер не указан явно, то назначаем первого попавшегося из
-        # authorized_managers
-        if not self.manager and self.authorized_managers.len() > 0 and 'manager' not in kwargs:
-            self.manager = self.authorized_managers.all()[0]
-        super(Client, self).save(*args, **kwargs)
+    # TODO: сделать проверку корректности и исправление заполнения мнеджеров
+    # def save(self, *args, **kwargs):  # если менеджер не указан явно, то назначаем первого попавшегося из
+    #     # authorized_managers
+    #     if not self.manager and self.authorized_managers.all().count() > 0 and 'manager' not in kwargs:
+    #         self.manager = self.authorized_managers.all()[0]
+    #     if self.manager not in self.authorized_managers.all():
+    #         self.authorized_managers.add(self.manager)
+    #     super().save(*args, **kwargs)
 
     def to_dict(self):
         res = {
@@ -221,7 +223,7 @@ class Client(models.Model):
             'phone': self.phone,
             'status': self.status,
             'dataBase': self.database,
-            'manager': '' if not self.manager else self.manager.userprofile.manager_ID
+            'manager': None if not self.manager else self.manager.userprofile.manager_ID
         }
         return {
             k: v
@@ -234,7 +236,7 @@ class Client(models.Model):
             self.database = data['dataBase']
 
         if 'status' in data:
-            self.status = data['dataBase']
+            self.status = data['status']
 
         if 'name' in data:
             self.name = data['name']
@@ -268,3 +270,25 @@ class Client(models.Model):
             self.authorized_managers.set(managers)
 
         self.save()
+
+
+# @receiver(post_save, sender=Client)
+# def complete_managers_relations(instance, **kwargs):
+#     print('before all')
+#     print(instance.authorized_managers.all())
+#     print(instance.manager)
+#     if not instance.manager and instance.authorized_managers.all().count() > 0 and 'manager' not in kwargs:
+#         print('in add manager from authorized')
+#         instance.manager = instance.authorized_managers.all()[0]
+#         instance.save()
+#         return
+#     if instance.manager not in instance.authorized_managers.all():
+#         print('in add manager to authorized')
+#         print(instance.authorized_managers.all())
+#         print(instance.manager)
+#         instance.authorized_managers.add(instance.manager)
+#         print(instance.authorized_managers.all())
+#         print(instance.manager)
+#         print(instance.authorized_managers.all())
+#         print(instance.manager)
+#         return

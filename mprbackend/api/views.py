@@ -165,7 +165,6 @@ clients_schema = {
             }
         },
         "required": [
-            "name",
             "inn"
         ]
     },
@@ -452,7 +451,6 @@ def clients(request):
             except jsonschema.exceptions.ValidationError as e:
                 print(e)
                 return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
-
             for c in request.data:
                 try:
                     client = Client.objects.get(INN=c['inn'])
