@@ -21,6 +21,8 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True)
     role = models.CharField(max_length=20)
     manager_ID = models.CharField(max_length=200, null=True, blank=True, unique=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
+    last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
 
     def __str__(self):
         onesid = (', ID в 1С: ' + self.manager_ID if self.manager_ID else "")
@@ -50,6 +52,8 @@ class Visit(models.Model):
     invoice = models.BooleanField(default=False)
     status = models.SmallIntegerField(default=-1)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='author')
+    created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
+    last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
 
     def __str__(self):
         return str(self.date) + ' ' + self.manager.first_name + ' ' + self.manager.last_name + ' в ' + self.client_INN
@@ -146,6 +150,8 @@ class Order(models.Model):
     recommend = models.SmallIntegerField(null=True, blank=True, default=0)
     balance = models.SmallIntegerField(null=True, blank=True, default=0)
     sales = models.SmallIntegerField(null=True, blank=True, default=0)
+    created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
+    last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
 
 
 class ChecklistQuestion(models.Model):
@@ -154,6 +160,8 @@ class ChecklistQuestion(models.Model):
     text = models.TextField()
     active = models.BooleanField(default=True)
     section = models.CharField(max_length=200)
+    created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
+    last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
 
     def __str__(self):
         return '"' + self.text + '" в разделе "' + self.section + '" для клиентов "' + self.client_type + '" ' + str(
@@ -166,6 +174,8 @@ class ChecklistAnswer(models.Model):
     visit = models.ForeignKey(Visit, on_delete=models.CASCADE)
     answer1 = models.TextField(blank=True)
     answer2 = models.TextField(blank=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
+    last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
 
     class Meta:
         unique_together = [['visit', 'question']]
@@ -197,6 +207,8 @@ class Client(models.Model):
     manager = models.ForeignKey(User, blank=True, null=True, on_delete=models.DO_NOTHING, related_name='clientmanager')
     status = models.BooleanField(default=True)
     database = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
+    last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
 
     def __str__(self):
         return self.name

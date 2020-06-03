@@ -95,77 +95,84 @@ clients_path = os.path.join(settings.BASE_DIR, "static", "clients.json")
 clients_schema = {
     "type": "array",
     "items": {
+        "title": "Клиент",
+        "type": "object",
+        "description": "Данные клиента",
+        "x-examples": {},
+        "x-tags": [
+          "1С",
+          "Офис",
+          "Фронтенд"
+        ],
         "properties": {
-            "name": {
-                "type": "string",
-                "description": "Наименование клиента для отображения пользователю"
-            },
-            "inn": {
-                "type": "string",
-                "description": "ИНН"
-            },
-            "clientType": {
-                "type": "string",
-                "description": "Тип клиента (хорека, драфт, магазин etc)"
-            },
-            "priceType": {
-                "type": "string",
-                "description": "Тип цен для клиента"
-            },
-            "delay": {
-                "type": "integer",
-                "default": 0,
-                "description": "Отсрочка по договору",
-                "format": "int32",
-                "example": 0,
-                "minimum": 0,
-                "maximum": 45
-            },
-            "limit": {
-                "type": "integer",
-                "default": 0,
-                "description": "Лимит",
-                "format": "int64",
-                "example": 0,
-                "minimum": 0,
-                "maximum": 100000
-            },
-            "authorizedManagersID": {
-                "type": "array",
-                "description": "Массив ID менеджеров, для которых доступен клиент",
-                "items": {
-                    "type": "string"
-                }
-            },
-            "email": {
-                "type": "string",
-                "format": "email"
-            },
-            "phone": {
-                "type": "string"
-            },
-            "manager": {
-                "type": "string",
-                "description": "ID основного менеджера"
-            },
-            "longitude": {
-                "type": "string"
-            },
-            "latitude": {
-                "type": "string"
-            },
-            "status": {
-                "type": "boolean",
-                "default": "1",
-                "description": "Действует/не действует"
-            },
-            "dataBase": {
-                "type": "boolean",
-                "default": "0"
+          "name": {
+            "type": "string",
+            "description": "Наименование клиента для отображения пользователю"
+          },
+          "inn": {
+            "type": "string",
+            "description": "ИНН"
+          },
+          "clientType": {
+            "type": "string",
+            "description": "Тип клиента (хорека, драфт, магазин etc)"
+          },
+          "priceType": {
+            "type": "string",
+            "description": "Тип цен для клиента"
+          },
+          "delay": {
+            "type": "integer",
+            "default": 0,
+            "description": "Отсрочка по договору",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "default": 0,
+            "description": "Лимит",
+            "format": "int64",
+            "example": 0,
+            "minimum": 0
+          },
+          "authorizedManagersID": {
+            "type": "array",
+            "description": "Массив ID менеджеров, для которых доступен клиент",
+            "items": {
+              "type": "string"
             }
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "manager": {
+            "type": "string",
+            "description": "ID основного менеджера"
+          },
+          "longitude": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "string"
+          },
+          "status": {
+            "type": "boolean",
+            "default": "1",
+            "description": "Действует/не действует"
+          },
+          "dataBase": {
+            "type": "boolean",
+            "default": "0"
+          }
         },
         "required": [
-            "inn"
+          "inn"
         ]
     },
 }
@@ -177,7 +184,7 @@ visit_schema = {
     "properties": {
         "UUID": {
             "type": "string",
-            "description": "Уникальный идентификатор визита. Генерируется приложением МПР или офиса и никогда не изменяется",
+            "description": "Уникальный идентификатор визита",
             "format": "uuid"
         },
         "date": {
@@ -326,12 +333,13 @@ def products(request):
         except FileNotFoundError:
             return Response('No such file, please upload it first', status=status.HTTP_503_SERVICE_UNAVAILABLE)
     elif request.method == 'POST':
-        if request.user.userprofile.role != '1S':
-            return Response("Only 1S can do it", status=status.HTTP_403_FORBIDDEN)
+        if request.user.userprofile.role == 'MPR':
+            return Response("You can't do this", status=status.HTTP_403_FORBIDDEN)
         else:
             try:
                 jsonschema.validate(instance=request.data, schema=products_schema)
-            except jsonschema.exceptions.ValidationError:
+            except jsonschema.exceptions.ValidationError as e:
+                print(e)
                 return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
             with open(products_path, 'w', encoding="utf-8") as f:
                 json.dump(request.data, f, ensure_ascii=False)
