@@ -18,7 +18,7 @@ from rest_framework.parsers import JSONParser
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
-from .models import Order, Visit, ChecklistQuestion, ChecklistAnswer, Client
+from .models import Order, Visit, ChecklistQuestion, ChecklistAnswer, Client, Photo
 
 products_path = os.path.join(settings.BASE_DIR, "static", "products.json")
 products_schema = {
@@ -814,3 +814,20 @@ def checklistanswers(request):
                 print('creation')
                 print(exception)
         return Response('OK', status=status.HTTP_200_OK)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def photos(request, vuuid):
+    if request.method == 'POST':
+        try:
+            cvisit = Visit.objects.get(UUID=vuuid)
+        except Visit.DoesNotExist:
+            return Response('Visit not found', status=status.HTTP_400_BAD_REQUEST)
+        try:
+            ph = Photo.objects.create(visit=cvisit, image=request.data['image'])
+        except KeyError:
+            return Response('Bad image content', status=status.HTTP_400_BAD_REQUEST)
+        return Response('Photo have been saved', status=status.HTTP_200_OK)
+    if request.method == 'GET':
+        return Response('Not implemented yet', status=status.HTTP_501_NOT_IMPLEMENTED)

@@ -13,5 +13,6 @@ urlpatterns = [
     path('checklistsquestions/<uuid:quuid>', views.checklistsquestions, name='checklistsquestions'),
     path('checklistanswers', views.checklistanswers, name='checklistanswers'),
     path('users/me', views.usersme, name='usersme'),
+    path('photos/<uuid:vuuid>', views.photos, name='photos')
 ]
 

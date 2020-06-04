@@ -304,3 +304,12 @@ class Client(models.Model):
 #         print(instance.authorized_managers.all())
 #         print(instance.manager)
 #         return
+
+def photo_path(instance, filename):
+    return '/'.join(['photos', instance.visit.client_INN, filename])
+
+
+class Photo(models.Model):
+    visit = models.ForeignKey(Visit, null=True, blank=True, on_delete=models.DO_NOTHING)
+    image = models.ImageField(upload_to=photo_path)
+    timestamp = models.DateTimeField(auto_now=True)
