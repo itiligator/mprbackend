@@ -738,7 +738,7 @@ def checklistsquestions(request, quuid=None):
         data = JSONParser().parse(request)
         try:
             instance = ChecklistQuestion.objects.get(UUID=data['UUID'])
-        except ChecklistQuestion.DoesNotExist:
+        except (KeyError, ChecklistQuestion.DoesNotExist):
             instance = None
         serializer = ChecklistQuestionSerializer(instance=instance, data=data)
         if serializer.is_valid():
