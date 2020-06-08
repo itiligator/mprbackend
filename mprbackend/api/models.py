@@ -313,3 +313,43 @@ class Photo(models.Model):
     visit = models.ForeignKey(Visit, null=True, blank=True, on_delete=models.DO_NOTHING)
     image = models.ImageField(upload_to=photo_path)
     timestamp = models.DateTimeField(auto_now=True)
+
+
+class Task(models.Model):
+    UUID = models.CharField(max_length=36, default=uuid.uuid4(), unique=True)
+    manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING, null=True, blank=True)
+    text = models.TextField(blank=True, null=True)
+    title = models.TextField(blank=True, null=True)
+    deadline = models.DateField(blank=True, null=True)
+    status = models.IntegerField(default=0)
+    created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
+    last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
+
+    def to_dict(self):
+        result = {
+            'UUID': self.UUID,
+            'id': self.id,
+            'manager': self.manager.userprofile__manager_ID,
+            'text': self.text,
+            'title': self.title,
+            'deadline': self.deadline,
+            'status': self.status
+        }
+        result = {k: v for k, v in result if v is not None}
+        return result
+
+    def update_from_dict(self, data):
+        if 'text' in data:
+            self.text = data['text']
+
+        if 'title' in data:
+            self.title = data['title']
+
+        if 'manager' in data:
+            self.manager = User.objects.get(userprofile__manager_ID=data['manager'])
+
+        if 'deadline' in data:
+            self.deadline = data['deadline']
+
+        if 'status' in data:
+            self.status = data['status']

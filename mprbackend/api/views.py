@@ -831,3 +831,12 @@ def photos(request, vuuid):
         return Response('Photo have been saved', status=status.HTTP_200_OK)
     if request.method == 'GET':
         return Response('Not implemented yet', status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def tasks(request, tuuid):
+    if request.method == 'GET':
+        return Response('', status=status.HTTP_501_NOT_IMPLEMENTED)
+    if request.method == 'PUT':
+        return Response('', status=status.HTTP_501_NOT_IMPLEMENTED)
