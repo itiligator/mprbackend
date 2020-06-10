@@ -621,7 +621,7 @@ def resetvisits(request):
             clientinn = random.choice(clients)['inn']
             Visit.objects.create(
                 UUID=uuid.uuid4(),
-                author=User.objects.get(pk=9),
+                author=User.objects.get(pk=1),
                 manager=request.user,
                 client_INN=clientinn,
                 status=0, date=date,
@@ -631,7 +631,7 @@ def resetvisits(request):
                 clientinn = random.choice(clients)['inn']
                 Visit.objects.create(
                     UUID=uuid.uuid4(),
-                    author=User.objects.get(pk=9),
+                    author=User.objects.get(pk=1),
                     manager=request.user,
                     client_INN=clientinn,
                     status=0,
@@ -693,7 +693,7 @@ def resetvisits(request):
                     payment_plan=payment - random.randint(0, 2000),
                     processed=processed,
                     invoice=processed,
-                    author=User.objects.get(pk=9)
+                    author=User.objects.get(pk=1)
                 )
 
                 if clientType != 'Магазин':
