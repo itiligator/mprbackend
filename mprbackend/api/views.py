@@ -45,9 +45,6 @@ products_schema = {
             }
         },
         "required": [
-            "item",
-            "name",
-            "description"
         ]
     }
 }
@@ -100,79 +97,79 @@ clients_schema = {
         "description": "Данные клиента",
         "x-examples": {},
         "x-tags": [
-          "1С",
-          "Офис",
-          "Фронтенд"
+            "1С",
+            "Офис",
+            "Фронтенд"
         ],
         "properties": {
-          "name": {
-            "type": "string",
-            "description": "Наименование клиента для отображения пользователю"
-          },
-          "inn": {
-            "type": "string",
-            "description": "ИНН"
-          },
-          "clientType": {
-            "type": "string",
-            "description": "Тип клиента (хорека, драфт, магазин etc)"
-          },
-          "priceType": {
-            "type": "string",
-            "description": "Тип цен для клиента"
-          },
-          "delay": {
-            "type": "integer",
-            "default": 0,
-            "description": "Отсрочка по договору",
-            "format": "int32",
-            "example": 0,
-            "minimum": 0
-          },
-          "limit": {
-            "type": "integer",
-            "default": 0,
-            "description": "Лимит",
-            "format": "int64",
-            "example": 0,
-            "minimum": 0
-          },
-          "authorizedManagersID": {
-            "type": "array",
-            "description": "Массив ID менеджеров, для которых доступен клиент",
-            "items": {
-              "type": "string"
+            "name": {
+                "type": "string",
+                "description": "Наименование клиента для отображения пользователю"
+            },
+            "inn": {
+                "type": "string",
+                "description": "ИНН"
+            },
+            "clientType": {
+                "type": "string",
+                "description": "Тип клиента (хорека, драфт, магазин etc)"
+            },
+            "priceType": {
+                "type": "string",
+                "description": "Тип цен для клиента"
+            },
+            "delay": {
+                "type": "integer",
+                "default": 0,
+                "description": "Отсрочка по договору",
+                "format": "int32",
+                "example": 0,
+                "minimum": 0
+            },
+            "limit": {
+                "type": "integer",
+                "default": 0,
+                "description": "Лимит",
+                "format": "int64",
+                "example": 0,
+                "minimum": 0
+            },
+            "authorizedManagersID": {
+                "type": "array",
+                "description": "Массив ID менеджеров, для которых доступен клиент",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "email": {
+                "type": "string",
+                "format": "email"
+            },
+            "phone": {
+                "type": "string"
+            },
+            "manager": {
+                "type": "string",
+                "description": "ID основного менеджера"
+            },
+            "longitude": {
+                "type": "string"
+            },
+            "latitude": {
+                "type": "string"
+            },
+            "status": {
+                "type": "boolean",
+                "default": "1",
+                "description": "Действует/не действует"
+            },
+            "dataBase": {
+                "type": "boolean",
+                "default": "0"
             }
-          },
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "manager": {
-            "type": "string",
-            "description": "ID основного менеджера"
-          },
-          "longitude": {
-            "type": "string"
-          },
-          "latitude": {
-            "type": "string"
-          },
-          "status": {
-            "type": "boolean",
-            "default": "1",
-            "description": "Действует/не действует"
-          },
-          "dataBase": {
-            "type": "boolean",
-            "default": "0"
-          }
         },
         "required": [
-          "inn"
+            "inn"
         ]
     },
 }
@@ -322,7 +319,7 @@ checklistanswers_schema = {
 
 
 # TODO: переписать функции. DRY!
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def products(request):
     if request.method == 'GET':
@@ -332,17 +329,25 @@ def products(request):
                 return JsonResponse(json_data, safe=False)
         except FileNotFoundError:
             return Response('No such file, please upload it first', status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    elif request.method == 'POST':
+    elif request.method == 'PUT':
         if request.user.userprofile.role == 'MPR':
             return Response("You can't do this", status=status.HTTP_403_FORBIDDEN)
         else:
+            try:
+                with open(products_path, 'r', encoding="utf-8") as f:
+                    old_products = json.loads(f.read())
+            except FileNotFoundError:
+                old_products = []
             try:
                 jsonschema.validate(instance=request.data, schema=products_schema)
             except jsonschema.exceptions.ValidationError as e:
                 print(e)
                 return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
             with open(products_path, 'w', encoding="utf-8") as f:
-                json.dump(request.data, f, ensure_ascii=False)
+                new_products = old_products + request.data
+                # https://stackoverflow.com/questions/11092511/python-list-of-unique-dictionaries
+                new_products = list({v['item']: v for v in new_products}.values())
+                json.dump(new_products, f, ensure_ascii=False)
             return Response('Product list have been saved', status=status.HTTP_200_OK)
     else:
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -688,7 +693,7 @@ def resetvisits(request):
                     manager=request.user,
                     client_INN=clientinn,
                     status=2,
-                    date=date - timezone.timedelta(days=(14*(delta+1) + random.randint(0, 5))),
+                    date=date - timezone.timedelta(days=(14 * (delta + 1) + random.randint(0, 5))),
                     payment=payment,
                     payment_plan=payment - random.randint(0, 2000),
                     processed=processed,
