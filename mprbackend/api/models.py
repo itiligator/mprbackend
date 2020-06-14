@@ -54,6 +54,7 @@ class Visit(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='author')
     created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
     last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
+    delivery_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return str(self.date) + ' ' + self.manager.first_name + ' ' + self.manager.last_name + ' в ' + self.client_INN
@@ -72,6 +73,8 @@ class Visit(models.Model):
         }
         if self.date:
             result['date'] = self.date
+        if self.delivery_date:
+            result['deliveryDate'] = self.delivery_date
         if self.payment:
             result['payment'] = self.payment
         if self.payment_plan:
@@ -111,7 +114,10 @@ class Visit(models.Model):
         if 'date' in data:
             self.date = data['date']
 
-        if 'payment' in data and data['payment'] is not None:
+        if 'deliveryDate' in data:
+            self.delivery_date = data['deliveryDate']
+
+        if 'payment' in data:
             self.payment = int(data['payment'])
 
         if 'paymentPlan' in data:
