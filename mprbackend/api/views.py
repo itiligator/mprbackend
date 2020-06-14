@@ -80,10 +80,6 @@ prices_schema = {
             }
         },
         "required": [
-            "productItem",
-            "priceType",
-            "amount",
-            "database"
         ]
     }
 }
@@ -353,7 +349,7 @@ def products(request):
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def prices(request):
     if request.method == 'GET':
@@ -369,16 +365,26 @@ def prices(request):
                 return JsonResponse(json_data, safe=False)
         except FileNotFoundError:
             return Response('No such file, please upload it first', status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    elif request.method == 'POST':
+    elif request.method == 'PUT':
         if request.user.userprofile.role != '1S':
             return Response("Only 1S can do it", status=status.HTTP_403_FORBIDDEN)
         else:
             try:
+                with open(prices_path, 'r', encoding="utf-8") as f:
+                    old_prices = json.loads(f.read())
+            except FileNotFoundError:
+                old_prices = []
+            try:
                 jsonschema.validate(instance=request.data, schema=prices_schema)
-            except jsonschema.exceptions.ValidationError:
+            except jsonschema.exceptions.ValidationError as e:
+                print(e)
                 return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
             with open(prices_path, 'w', encoding="utf-8") as f:
-                json.dump(request.data, f, ensure_ascii=False)
+                new_prices = old_prices + request.data
+                # https://stackoverflow.com/questions/11092511/python-list-of-unique-dictionaries
+                new_prices = list({(v['productItem'], v['dataBase']): v for v in new_prices}.values())
+                print(new_prices)
+                json.dump(new_prices, f, ensure_ascii=False)
             return Response('Price list have been saved', status=status.HTTP_200_OK)
     else:
         return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
