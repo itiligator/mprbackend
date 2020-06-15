@@ -528,11 +528,19 @@ def visits(request):
         if author:
             q = q.filter(author=author)
         if processed:
+            print('im in processed')
             processed = True if (processed == "true" or processed == "True") else False
-            q = q.filter(processed=processed)
+            print(processed)
+            if processed:
+                q = q.exclude(processed=None)
+            else:
+                q = q.filter(processed=None)
         if invoice:
             invoice = True if (invoice == "true" or invoice == "True") else False
-            q = q.filter(invoice=invoice)
+            if invoice:
+                q = q.exclude(invoice=None)
+            else:
+                q = q.filter(invoice=None)
         if visit_status:
             q = q.filter(status=visit_status)
         if client_inn:
