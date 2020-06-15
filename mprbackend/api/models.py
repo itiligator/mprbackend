@@ -48,8 +48,8 @@ class Visit(models.Model):
     payment = models.FloatField(null=True, blank=True)
     payment_plan = models.FloatField(null=True, blank=True)
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='manager')
-    processed = models.BooleanField(default=False)
-    invoice = models.BooleanField(default=False)
+    processed = models.CharField(max_length=200, null=True, blank=True)
+    invoice = models.CharField(max_length=200, null=True, blank=True)
     status = models.SmallIntegerField(default=-1)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='author')
     created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
@@ -64,9 +64,7 @@ class Visit(models.Model):
             'UUID': self.UUID,
             'clientINN': self.client_INN,
             'dataBase': self.database,
-            'processed': self.processed,
             'status': self.status,
-            'invoice': self.invoice,
             'managerID': self.manager.userprofile.manager_ID,
             'author': self.author.userprofile.manager_ID,
             'id': self.pk
@@ -79,6 +77,10 @@ class Visit(models.Model):
             result['payment'] = self.payment
         if self.payment_plan:
             result['paymentPlan'] = self.payment_plan
+        if self.processed:
+            result['processed'] = self.processed
+        if self.invoice:
+            result['invoice'] = self.invoice
 
         orders = Order.objects.filter(visit=self)
         orders_array = [{
