@@ -7,7 +7,7 @@ import time
 import jsonschema
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -615,6 +615,15 @@ def visit(request, vuuid):
         else:
             return Response("You don't have permissions to delete visit", status=status.HTTP_403_FORBIDDEN)
     return Response({}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def visitbyid(request, vid):
+    try:
+        v = Visit.objects.get(pk=vid)
+    except Visit.DoesNotExist:
+        return Response("Visit not found", status=status.HTTP_400_BAD_REQUEST)
+    return HttpResponseRedirect('/api/visits/'+v.UUID)
 
 
 @api_view(['GET'])

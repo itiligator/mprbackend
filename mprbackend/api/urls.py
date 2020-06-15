@@ -9,6 +9,7 @@ urlpatterns = [
     path('visits', views.visits, name='visits'),
     path('resetvisits', views.resetvisits, name='resetvisits'),
     path('visits/<uuid:vuuid>', views.visit, name='visit'),
+    path('visits/id/<int:vid>', views.visitbyid),
     path('checklistsquestions', views.checklistsquestions, name='checklistsquestions'),
     path('checklistsquestions/<uuid:quuid>', views.checklistsquestions, name='checklistsquestions'),
     path('checklistanswers', views.checklistanswers, name='checklistanswers'),
