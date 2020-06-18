@@ -210,6 +210,7 @@ class Client(models.Model):
     delay = models.IntegerField(default=0)
     limit = models.IntegerField(default=0)
     authorized_managers = models.ManyToManyField(User, blank=True, related_name='authorized_managers')
+    address = models.CharField(max_length=200, blank=True, null=True)
     email = models.CharField(max_length=50, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     manager = models.ForeignKey(User, blank=True, null=True, on_delete=models.DO_NOTHING, related_name='clientmanager')
@@ -239,6 +240,7 @@ class Client(models.Model):
             'limit': self.limit,
             'authorizedManagersID': list(
                 self.authorized_managers.all().values_list('userprofile__manager_ID', flat=True)),
+            'address': self.address,
             'email': self.email,
             'phone': self.phone,
             'status': self.status,
@@ -275,6 +277,9 @@ class Client(models.Model):
 
         if 'limit' in data:
             self.limit = data['limit']
+
+        if 'address' in data:
+            self.address = data['address']
 
         if 'email' in data:
             self.email = data['email']
