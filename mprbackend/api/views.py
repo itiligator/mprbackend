@@ -161,7 +161,11 @@ clients_schema = {
             },
             "dataBase": {
                 "type": "boolean",
-                "default": "0"
+                "description": "false - тест, true - ПБК"
+            },
+            "address": {
+                "type": "string",
+                "description": "Адрес клиента"
             }
         },
         "required": [
