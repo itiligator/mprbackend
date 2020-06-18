@@ -42,6 +42,10 @@ products_schema = {
             "description": {
                 "type": "string",
                 "description": "Развернутое описание товара"
+            },
+            "active": {
+                "type": "boolean",
+                "description": "Признак активности"
             }
         },
         "required": [
@@ -327,6 +331,10 @@ def products(request):
         try:
             with open(products_path, 'r', encoding="utf-8") as f:
                 json_data = json.loads(f.read())
+                product_active = request.query_params.get('active', None)
+                if product_active:
+                    product_active = True if (product_active == "true" or product_active == "True") else False
+                    json_data = [x for x in json_data if x.get('active', True) == product_active]
                 return JsonResponse(json_data, safe=False)
         except FileNotFoundError:
             return Response('No such file, please upload it first', status=status.HTTP_503_SERVICE_UNAVAILABLE)
