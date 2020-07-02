@@ -218,6 +218,8 @@ class Client(models.Model):
     database = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
     last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
+    longitude = models.CharField(max_length=100, blank=True, null=True)
+    latitude = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -245,7 +247,9 @@ class Client(models.Model):
             'phone': self.phone,
             'status': self.status,
             'dataBase': self.database,
-            'manager': None if not self.manager else self.manager.userprofile.manager_ID
+            'manager': None if not self.manager else self.manager.userprofile.manager_ID,
+            'latitude': self.latitude,
+            'longitude': self.longitude
         }
         return {
             k: v
@@ -280,6 +284,12 @@ class Client(models.Model):
 
         if 'address' in data:
             self.address = data['address']
+
+        if 'longitude' in data:
+            self.longitude = data['longitude']
+
+        if 'latitude' in data:
+            self.latitude = data['latitude']
 
         if 'email' in data:
             self.email = data['email']
