@@ -773,6 +773,10 @@ def checklistsquestions(request, quuid=None):
             return JsonResponse(serializer.data, safe=False)
         else:
             questions = ChecklistQuestion.objects.all()
+            active = request.query_params.get('active', None)
+            if active:
+                active = True if (active == "true" or active == "True") else False
+                questions = questions.filter(active=active)
             serializer = ChecklistQuestionSerializer(questions, many=True)
             return JsonResponse(serializer.data, safe=False)
     if request.method == 'PUT':
@@ -835,14 +839,12 @@ def checklistanswers(request):
         for answer in request.data:
             try:
                 v = Visit.objects.get(UUID=answer['visitUUID'])
-            except Exception as exception:
-                print('visit')
-                print(exception)
+            except (KeyError, Visit.DoesNotExist):
+                return Response('Something wrong with visit UUID', status=status.HTTP_400_BAD_REQUEST)
             try:
                 q = ChecklistQuestion.objects.get(UUID=answer['questionUUID'])
-            except Exception as exception:
-                print('ch quest')
-                print(exception)
+            except (KeyError, ChecklistQuestion.DoesNotExist):
+                return Response('Something wrong with question UUID', status=status.HTTP_400_BAD_REQUEST)
             try:
                 ChecklistAnswer.objects.create(
                     # UUID=answer['UUID'],
@@ -851,9 +853,8 @@ def checklistanswers(request):
                     answer1=str(answer.get('answer1', '')),
                     answer2=answer.get('answer2', '')
                 )
-            except Exception as exception:
-                print('creation')
-                print(exception)
+            except Exception:
+                return Response('Something wrong with answer creation', status=status.HTTP_400_BAD_REQUEST)
         return Response('OK', status=status.HTTP_200_OK)
 
 
