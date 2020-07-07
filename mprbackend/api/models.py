@@ -140,13 +140,13 @@ class Visit(models.Model):
                 if 'order' in o:
                     dbo.order = int(o['order'])
                 if 'sales' in o:
-                    dbo.order = int(o['sales'])
+                    dbo.sales = int(o['sales'])
                 if 'delivered' in o:
-                    dbo.order = int(o['delivered'])
+                    dbo.delivered = int(o['delivered'])
                 if 'recommend' in o:
-                    dbo.order = int(o['recommend'])
+                    dbo.recommend = int(o['recommend'])
                 if 'balance' in o:
-                    dbo.order = int(o['balance'])
+                    dbo.balance = int(o['balance'])
                 dbo.save()
 
 
