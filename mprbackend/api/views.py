@@ -482,7 +482,7 @@ def clients(request):
                 jsonschema.validate(instance=request.data, schema=clients_schema)
             except jsonschema.exceptions.ValidationError as e:
                 print(e)
-                return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+                return Response(e.message, status=status.HTTP_400_BAD_REQUEST)
             for c in request.data:
                 try:
                     client = Client.objects.get(INN=c['inn'])
@@ -616,7 +616,7 @@ def visit(request, vuuid):
                 v.update_from_dict(request.data)
             except jsonschema.exceptions.ValidationError as e:
                 print(e.message)
-                return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+                return Response(e.message, status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
                 return Response("Can't update visit: there is no manager with such ID, please try with another",
                                 status=status.HTTP_400_BAD_REQUEST)
