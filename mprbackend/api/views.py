@@ -658,7 +658,9 @@ def resetvisits(request):
         #     clients = [x for x in clients if request.user.userprofile.manager_ID in x['authorizedManagersID']]
         # endedvisits = random.randint(2, 8)
         # plannedvisits = random.randint(13, 16) - endedvisits
-        clientsinn = Client.objects.filter(manager=request.user).values_list('INN', flat=True)
+        q = Client.objects.filter(manager=request.user)
+        q.exclude(client_type='Магазин')
+        clientsinn = q.values_list('INN', flat=True)
         for _ in range(random.randint(4, 8)):  # запланированные на сегодня визиты
             clientinn = random.choice(clientsinn)
             Visit.objects.create(
