@@ -636,6 +636,7 @@ def visit(request, vuuid):
             return Response("You don't have permissions to delete visit", status=status.HTTP_403_FORBIDDEN)
     return Response({}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def visitbyid(request, vid):
@@ -643,7 +644,7 @@ def visitbyid(request, vid):
         v = Visit.objects.get(pk=vid)
     except Visit.DoesNotExist:
         return Response("Visit not found", status=status.HTTP_400_BAD_REQUEST)
-    return HttpResponseRedirect('/api/visits/'+v.UUID)
+    return HttpResponseRedirect('/api/visits/' + v.UUID)
 
 
 @api_view(['GET'])
@@ -653,14 +654,12 @@ def resetvisits(request):
         # Visit.objects.filter(
         #     manager=User.objects.get(userprofile__manager_ID=request.user.userprofile.manager_ID)).delete()
         date = timezone.now().date()
-        # with open(clients_path, 'r', encoding="utf-8") as f:
-        #     clients = json.loads(f.read())
-        #     clients = [x for x in clients if request.user.userprofile.manager_ID in x['authorizedManagersID']]
-        # endedvisits = random.randint(2, 8)
-        # plannedvisits = random.randint(13, 16) - endedvisits
         q = Client.objects.filter(manager=request.user)
-        q.exclude(client_type='Магазин')
+        q = q.exclude(client_type='Магазин')
         clientsinn = q.values_list('INN', flat=True)
+        if not clientsinn:
+            return Response("There are no clients for this manager found", status=status.HTTP_200_OK)
+
         for _ in range(random.randint(4, 8)):  # запланированные на сегодня визиты
             clientinn = random.choice(clientsinn)
             Visit.objects.create(
@@ -671,6 +670,7 @@ def resetvisits(request):
                 status=0,
                 date=date,
                 payment_plan=random.randint(2000, 10000))
+
         for _ in range(random.randint(10, 16)):  # запланированные на неделю визиты
             for days in range(1, 5):
                 clientinn = random.choice(clientsinn)
@@ -682,48 +682,12 @@ def resetvisits(request):
                     status=0,
                     date=date + timezone.timedelta(days=days),
                     payment_plan=random.randint(2000, 10000))
+
+
         with open(products_path, 'r', encoding="utf-8") as f:
             pr = json.loads(f.read())
-        # for _ in range(endedvisits): # оконченные сегодня визиты
-        #     client = random.choice(clients)
-        #     clientinn = client['inn']
-        #     clientType = client['clientType']
-        #     processed = bool(random.randint(0, 1))
-        #     payment = random.randint(2000, 10000)
-        #     v = Visit.objects.create(
-        #         UUID=uuid.uuid4(),
-        #         manager=request.user,
-        #         client_INN=clientinn,
-        #         status=2,
-        #         date=date,
-        #         payment=payment,
-        #         payment_plan=payment-random.randint(0, 2000),
-        #         processed=processed,
-        #         invoice=processed
-        #     )
-        #     for product in pr:
-        #         order = random.randint(3, 15)
-        #         Order.objects.create(
-        #             visit=v,
-        #             product_item=product['item'],
-        #             order=order,
-        #             delivered=random.choice([0, order, order-1, order-2]) if processed else 0,
-        #             recommend=random.choice([order, order-1, order-2]),
-        #             balance=random.randint(0, 10),
-        #             sales=random.randint(0, 15)
-        #         )
-        #     questions = ChecklistQuestion.objects.filter(client_type=clientType)
-        #     for question in questions:
-        #         ChecklistAnswer.objects.create(
-        #             visit=v,
-        #             question=question,
-        #             answer1=str(random.randint(0, 10)),
-        #             answer2=str(random.randint(0, 10))
-        #         )
 
         for clientinn in clientsinn:  # делаем по три оконченных визита для каждого клиента
-            # clientType = client['clientType']
-            # questions = ChecklistQuestion.objects.filter(client_type=clientType)
             for delta in range(3):
                 payment = random.randint(2000, 10000)
                 v = Visit.objects.create(
@@ -750,18 +714,12 @@ def resetvisits(request):
                         sales=random.randint(0, 15)
                     )
 
-                # for question in questions:
-                #     ChecklistAnswer.objects.create(
-                #         visit=v,
-                #         question=question,
-                #         answer1=str(random.randint(0, 10)),
-                #         answer2=str(random.randint(0, 10))
-                #     )
+        return Response("New visits have been added for" + str(clientsinn), status=status.HTTP_200_OK)
+
     else:
         Photo.objects.all().delete()
         Visit.objects.all().delete()
-
-    return Response("New visits have been added", status=status.HTTP_200_OK)
+        return Response("All visits and photos have been deleted", status=status.HTTP_200_OK)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
