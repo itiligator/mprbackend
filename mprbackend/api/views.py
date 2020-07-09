@@ -650,26 +650,28 @@ def visitbyid(request, vid):
 @permission_classes([IsAuthenticated])
 def resetvisits(request):
     if request.user.userprofile.role == 'MPR':
-        Visit.objects.filter(
-            manager=User.objects.get(userprofile__manager_ID=request.user.userprofile.manager_ID)).delete()
+        # Visit.objects.filter(
+        #     manager=User.objects.get(userprofile__manager_ID=request.user.userprofile.manager_ID)).delete()
         date = timezone.now().date()
-        with open(clients_path, 'r', encoding="utf-8") as f:
-            clients = json.loads(f.read())
-            clients = [x for x in clients if request.user.userprofile.manager_ID in x['authorizedManagersID']]
+        # with open(clients_path, 'r', encoding="utf-8") as f:
+        #     clients = json.loads(f.read())
+        #     clients = [x for x in clients if request.user.userprofile.manager_ID in x['authorizedManagersID']]
         # endedvisits = random.randint(2, 8)
         # plannedvisits = random.randint(13, 16) - endedvisits
+        clientsinn = Client.objects.filter(manager=request.user).values_list('INN', flat=True)
         for _ in range(random.randint(4, 8)):  # запланированные на сегодня визиты
-            clientinn = random.choice(clients)['inn']
+            clientinn = random.choice(clientsinn)
             Visit.objects.create(
                 UUID=uuid.uuid4(),
                 author=User.objects.get(pk=1),
                 manager=request.user,
                 client_INN=clientinn,
-                status=0, date=date,
+                status=0,
+                date=date,
                 payment_plan=random.randint(2000, 10000))
         for _ in range(random.randint(10, 16)):  # запланированные на неделю визиты
             for days in range(1, 5):
-                clientinn = random.choice(clients)['inn']
+                clientinn = random.choice(clientsinn)
                 Visit.objects.create(
                     UUID=uuid.uuid4(),
                     author=User.objects.get(pk=1),
@@ -717,11 +719,9 @@ def resetvisits(request):
         #             answer2=str(random.randint(0, 10))
         #         )
 
-        for client in clients:  # делаем по три оконченных визита для каждого клиента
-            clientinn = client['inn']
-            clientType = client['clientType']
-            processed = True
-            questions = ChecklistQuestion.objects.filter(client_type=clientType)
+        for clientinn in clientsinn:  # делаем по три оконченных визита для каждого клиента
+            # clientType = client['clientType']
+            # questions = ChecklistQuestion.objects.filter(client_type=clientType)
             for delta in range(3):
                 payment = random.randint(2000, 10000)
                 v = Visit.objects.create(
@@ -730,37 +730,35 @@ def resetvisits(request):
                     client_INN=clientinn,
                     status=2,
                     date=date - timezone.timedelta(days=(14 * (delta + 1) + random.randint(0, 5))),
+                    delivery_date=date + timezone.timedelta(days=random.randint(6, 14)),
                     payment=payment,
                     payment_plan=payment - random.randint(0, 2000),
-                    processed=processed,
-                    invoice=processed,
                     author=User.objects.get(pk=1)
                 )
 
-                if clientType != 'Магазин':
-                    for product in pr:
-                        order = random.randint(3, 15)
-                        Order.objects.create(
-                            visit=v,
-                            product_item=product['item'],
-                            order=order,
-                            delivered=random.choice([0, order, order - 1, order - 2]) if processed else 0,
-                            recommend=random.choice([order, order - 1, order - 2]),
-                            balance=random.randint(0, 10),
-                            sales=random.randint(0, 15)
-                        )
-
-                for question in questions:
-                    ChecklistAnswer.objects.create(
+                for product in pr:
+                    order = random.randint(3, 15)
+                    Order.objects.create(
                         visit=v,
-                        question=question,
-                        answer1=str(random.randint(0, 10)),
-                        answer2=str(random.randint(0, 10))
+                        product_item=product['item'],
+                        order=order,
+                        delivered=0,
+                        recommend=random.choice([order, order - 1, order - 2]),
+                        balance=random.randint(0, 10),
+                        sales=random.randint(0, 15)
                     )
+
+                # for question in questions:
+                #     ChecklistAnswer.objects.create(
+                #         visit=v,
+                #         question=question,
+                #         answer1=str(random.randint(0, 10)),
+                #         answer2=str(random.randint(0, 10))
+                #     )
     else:
         Visit.objects.all().delete()
 
-    return Response("Visits have been reset", status=status.HTTP_200_OK)
+    return Response("New visits have been added", status=status.HTTP_200_OK)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
