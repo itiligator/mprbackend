@@ -756,6 +756,7 @@ def resetvisits(request):
                 #         answer2=str(random.randint(0, 10))
                 #     )
     else:
+        Photo.objects.all().delete()
         Visit.objects.all().delete()
 
     return Response("New visits have been added", status=status.HTTP_200_OK)
