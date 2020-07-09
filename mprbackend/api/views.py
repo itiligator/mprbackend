@@ -351,7 +351,7 @@ def products(request):
                 jsonschema.validate(instance=request.data, schema=products_schema)
             except jsonschema.exceptions.ValidationError as e:
                 print(e)
-                return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+                return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
             with open(products_path, 'w', encoding="utf-8") as f:
                 new_products = old_products + request.data
                 # https://stackoverflow.com/questions/11092511/python-list-of-unique-dictionaries
@@ -391,7 +391,7 @@ def prices(request):
                 jsonschema.validate(instance=request.data, schema=prices_schema)
             except jsonschema.exceptions.ValidationError as e:
                 print(e)
-                return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+                return Response('str(e)', status=status.HTTP_400_BAD_REQUEST)
             with open(prices_path, 'w', encoding="utf-8") as f:
                 new_prices = old_prices + request.data
                 # https://stackoverflow.com/questions/11092511/python-list-of-unique-dictionaries
@@ -482,7 +482,7 @@ def clients(request):
                 jsonschema.validate(instance=request.data, schema=clients_schema)
             except jsonschema.exceptions.ValidationError as e:
                 print(e)
-                return Response(e.message, status=status.HTTP_400_BAD_REQUEST)
+                return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
             for c in request.data:
                 try:
                     client = Client.objects.get(INN=c['inn'])
@@ -616,7 +616,7 @@ def visit(request, vuuid):
                 v.update_from_dict(request.data)
             except jsonschema.exceptions.ValidationError as e:
                 print(e.message)
-                return Response(e.message, status=status.HTTP_400_BAD_REQUEST)
+                return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
             except User.DoesNotExist:
                 return Response("Can't update visit: there is no manager with such ID, please try with another",
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -833,7 +833,7 @@ def checklistanswers(request):
         try:
             jsonschema.validate(instance=request.data, schema=checklistanswers_schema)
         except jsonschema.exceptions.ValidationError as e:
-            return Response('JSON data validation failed', status=status.HTTP_400_BAD_REQUEST)
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
         for answer in request.data:
             try:
                 v = Visit.objects.get(UUID=answer['visitUUID'])
