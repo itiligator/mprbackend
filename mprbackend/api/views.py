@@ -526,6 +526,7 @@ def visits(request):
         client_inn = request.query_params.get('clientINN', None)
         date = request.query_params.get('date', None)
         limit = request.query_params.get('limit', None)
+        database = request.query_params.get('dataBase', None)
         if limit:
             try:
                 limit = int(limit)
@@ -540,9 +541,7 @@ def visits(request):
         if author:
             q = q.filter(author=author)
         if processed:
-            print('im in processed')
             processed = True if (processed == "true" or processed == "True") else False
-            print(processed)
             if processed:
                 q = q.exclude(processed=None)
             else:
@@ -561,6 +560,9 @@ def visits(request):
             q = q.filter(date__gte=date)
         if limit:
             q = q[:limit]
+        if database:
+            database = True if (database == "true" or database == "True") else False
+            q = q.filter(database=database)
         result = [v.to_dict() for v in q]
         return JsonResponse(result, safe=False, status=status.HTTP_200_OK)
     return Response({}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
