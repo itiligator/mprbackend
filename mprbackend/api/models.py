@@ -138,15 +138,15 @@ class Visit(models.Model):
                 except Order.DoesNotExist:
                     dbo = Order(visit=self, product_item=o['productItem'])
                 if 'order' in o:
-                    dbo.order = int(o['order'])
+                    dbo.order = o['order']
                 if 'sales' in o:
-                    dbo.sales = int(o['sales'])
+                    dbo.sales = o['sales']
                 if 'delivered' in o:
-                    dbo.delivered = int(o['delivered'])
+                    dbo.delivered = o['delivered']
                 if 'recommend' in o:
-                    dbo.recommend = int(o['recommend'])
+                    dbo.recommend = o['recommend']
                 if 'balance' in o:
-                    dbo.balance = int(o['balance'])
+                    dbo.balance = o['balance']
                 dbo.save()
 
 
@@ -160,6 +160,9 @@ class Order(models.Model):
     sales = models.SmallIntegerField(null=True, blank=True, default=0)
     created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
     last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
+
+    def __str__(self):
+        return 'Визит №' + str(self.visit.id) + ' от ' + str(self.visit.date) + ', арт. ' + str(self.product_item)
 
 
 class ChecklistQuestion(models.Model):
