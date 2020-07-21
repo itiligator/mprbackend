@@ -395,7 +395,7 @@ def prices(request):
             with open(prices_path, 'w', encoding="utf-8") as f:
                 new_prices = old_prices + request.data
                 # https://stackoverflow.com/questions/11092511/python-list-of-unique-dictionaries
-                new_prices = list({(v['productItem'], v['dataBase']): v for v in new_prices}.values())
+                new_prices = list({(v['productItem'], v['dataBase'], v['priceType']): v for v in new_prices}.values())
                 print(new_prices)
                 json.dump(new_prices, f, ensure_ascii=False)
             return Response('Price list have been saved', status=status.HTTP_200_OK)
