@@ -170,7 +170,7 @@ class ChecklistQuestion(models.Model):
     client_type = models.CharField(max_length=200)
     text = models.TextField()
     active = models.BooleanField(default=True)
-    section = models.CharField(max_length=200)
+    section = models.CharField(max_length=200, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True, editable=False, null=False, blank=False)
     last_modified = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
 
