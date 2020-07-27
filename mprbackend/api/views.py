@@ -724,6 +724,17 @@ def resetvisits(request):
         return Response("All visits and photos have been deleted", status=status.HTTP_200_OK)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def resetonesdata(request):
+    Client.all().delete()
+    with open(products_path, 'w', encoding="utf-8") as f:
+        json.dump([], f, ensure_ascii=False)
+    with open(prices_path, 'w', encoding="utf-8") as f:
+        json.dump([], f, ensure_ascii=False)
+    return Response("All clients, products, prices have been deleted", status=status.HTTP_200_OK)
+
+
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def checklistsquestions(request, quuid=None):
