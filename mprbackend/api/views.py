@@ -727,7 +727,7 @@ def resetvisits(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def resetonesdata(request):
-    Client.all().delete()
+    Client.objects.all().exclude(client_type='Магазин').delete()
     with open(products_path, 'w', encoding="utf-8") as f:
         json.dump([], f, ensure_ascii=False)
     with open(prices_path, 'w', encoding="utf-8") as f:
