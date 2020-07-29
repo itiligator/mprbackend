@@ -379,3 +379,13 @@ class Task(models.Model):
 
         if 'status' in data:
             self.status = data['status']
+
+
+class Price(models.Model):
+    product_item = models.CharField(max_length=200)
+    price_type = models.CharField(max_length=200)
+    amount = models.CharField(max_length=200)
+    database = models.BooleanField(default=True)
+
+    def __str__(self):
+        return "Цена на" + str(self.product_item) + " для " + str(self.price_type) + "; БД: " + str(self.database)
