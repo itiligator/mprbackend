@@ -1,4 +1,3 @@
-import json
 import os
 import random
 import uuid
@@ -291,17 +290,17 @@ def prices(request):
         product_item = request.query_params.get('productItem', None)
         price_type = request.query_params.get('priceType', None)
         database = request.query_params.get('DB', None)
-        prices = Price.objects.all()
+        pricesQ = Price.objects.all()
         if product_item:
             product_item = True if (product_item == "true" or product_item == "True") else False
-            prices = prices.filter(product_item=product_item)
+            pricesQ = pricesQ.filter(product_item=product_item)
         if price_type:
             price_type = True if (price_type == "true" or price_type == "True") else False
-            prices = prices.filter(price_type=price_type)
+            pricesQ = pricesQ.filter(price_type=price_type)
         if database:
             database = True if (database == "true" or database == "True") else False
-            prices = prices.filter(database=database)
-        serializer = PriceSerializer(prices, many=True)
+            pricesQ = pricesQ.filter(database=database)
+        serializer = PriceSerializer(pricesQ, many=True)
         return JsonResponse(serializer.data, safe=False)
     if request.method == 'PUT':
         if request.user.userprofile.role != '1S':
@@ -605,9 +604,7 @@ def resetvisits(request):
                     date=date + timezone.timedelta(days=days),
                     payment_plan=random.randint(2000, 10000))
 
-
-        with open(products_path, 'r', encoding="utf-8") as f:
-            pr = json.loads(f.read())
+        pr = Client.objects.all().filter(active=True)
 
         for clientinn in clientsinn:  # делаем по три оконченных визита для каждого клиента
             for delta in range(3):
@@ -648,10 +645,8 @@ def resetvisits(request):
 @permission_classes([IsAuthenticated])
 def resetonesdata(request):
     Client.objects.all().exclude(client_type='Магазин').delete()
-    with open(products_path, 'w', encoding="utf-8") as f:
-        json.dump([], f, ensure_ascii=False)
-    with open(prices_path, 'w', encoding="utf-8") as f:
-        json.dump([], f, ensure_ascii=False)
+    Product.objects.all().delete()
+    Price.objects.all().delete()
     return Response("All clients, products, prices have been deleted", status=status.HTTP_200_OK)
 
 
@@ -759,7 +754,7 @@ def photos(request, vuuid):
         except Visit.DoesNotExist:
             return Response('Visit not found', status=status.HTTP_400_BAD_REQUEST)
         try:
-            ph = Photo.objects.create(visit=cvisit, image=request.data['image'])
+            Photo.objects.create(visit=cvisit, image=request.data['image'])
         except KeyError:
             return Response('Bad image content', status=status.HTTP_400_BAD_REQUEST)
         return Response('Photo have been saved', status=status.HTTP_200_OK)
