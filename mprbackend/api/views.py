@@ -13,12 +13,12 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .serializers import ChecklistQuestionSerializer
+from .serializers import ChecklistQuestionSerializer, PriceSerializer
 from rest_framework.parsers import JSONParser
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
-from .models import Order, Visit, ChecklistQuestion, ChecklistAnswer, Client, Photo
+from .models import Order, Visit, ChecklistQuestion, ChecklistAnswer, Client, Photo, Price
 
 products_path = os.path.join(settings.BASE_DIR, "static", "products.json")
 products_schema = {
@@ -350,7 +350,6 @@ def products(request):
             try:
                 jsonschema.validate(instance=request.data, schema=products_schema)
             except jsonschema.exceptions.ValidationError as e:
-                print(e)
                 return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
             with open(products_path, 'w', encoding="utf-8") as f:
                 new_products = old_products + request.data
@@ -366,41 +365,39 @@ def products(request):
 @permission_classes([IsAuthenticated])
 def prices(request):
     if request.method == 'GET':
-        try:
-            with open(prices_path, 'r', encoding="utf-8") as f:
-                product_item = request.query_params.get('productItem')
-                price_type = request.query_params.get('priceType')
-                json_data = json.loads(f.read())
-                if price_type:
-                    json_data = [x for x in json_data if x['priceType'] == price_type]
-                if product_item:
-                    json_data = [x for x in json_data if x['productItem'] == product_item]
-                return JsonResponse(json_data, safe=False)
-        except FileNotFoundError:
-            return Response('No such file, please upload it first', status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    elif request.method == 'PUT':
+        product_item = request.query_params.get('productItem', None)
+        price_type = request.query_params.get('priceType', None)
+        database = request.query_params.get('DB', None)
+        prices = Price.objects.all()
+        if product_item:
+            product_item = True if (product_item == "true" or product_item == "True") else False
+            prices = prices.filter(product_item=product_item)
+        if price_type:
+            price_type = True if (price_type == "true" or price_type == "True") else False
+            prices = prices.filter(price_type=price_type)
+        if database:
+            database = True if (database == "true" or database == "True") else False
+            prices = prices.filter(database=database)
+        serializer = PriceSerializer(prices, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    if request.method == 'PUT':
         if request.user.userprofile.role != '1S':
             return Response("Only 1S can do it", status=status.HTTP_403_FORBIDDEN)
-        else:
+        data = JSONParser().parse(request)
+        for price in data:
             try:
-                with open(prices_path, 'r', encoding="utf-8") as f:
-                    old_prices = json.loads(f.read())
-            except FileNotFoundError:
-                old_prices = []
-            try:
-                jsonschema.validate(instance=request.data, schema=prices_schema)
-            except jsonschema.exceptions.ValidationError as e:
-                print(e)
-                return Response('str(e)', status=status.HTTP_400_BAD_REQUEST)
-            with open(prices_path, 'w', encoding="utf-8") as f:
-                new_prices = old_prices + request.data
-                # https://stackoverflow.com/questions/11092511/python-list-of-unique-dictionaries
-                new_prices = list({(v['productItem'], v['dataBase'], v['priceType']): v for v in new_prices}.values())
-                print(new_prices)
-                json.dump(new_prices, f, ensure_ascii=False)
-            return Response('Price list have been saved', status=status.HTTP_200_OK)
-    else:
-        return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
+                instance = Price.objects.get(
+                    product_item=price['productItem'],
+                    price_type=price['priceType'],
+                    database=price['dataBase'])
+            except (KeyError, Price.DoesNotExist):
+                instance = None
+            serializer = PriceSerializer(instance=instance, data=price)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                return Response('Price validation error', status=status.HTTP_400_BAD_REQUEST)
+        return Response('Ok', status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
