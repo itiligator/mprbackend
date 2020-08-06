@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ChecklistQuestion, ChecklistAnswer, Price
+from .models import ChecklistQuestion, ChecklistAnswer, Price, Product
 
 
 class ChecklistQuestionSerializer(serializers.ModelSerializer):
@@ -27,3 +27,10 @@ class PriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Price
         fields = ['priceType', 'productItem', 'amount', 'dataBase']
+
+
+class ProductSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = ['item', 'name', 'description', 'active']

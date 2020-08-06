@@ -13,80 +13,13 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .serializers import ChecklistQuestionSerializer, PriceSerializer
+from .serializers import ChecklistQuestionSerializer, PriceSerializer, ProductSerializer
 from rest_framework.parsers import JSONParser
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
-from .models import Order, Visit, ChecklistQuestion, ChecklistAnswer, Client, Photo, Price
+from .models import Order, Visit, ChecklistQuestion, ChecklistAnswer, Client, Photo, Price, Product
 
-products_path = os.path.join(settings.BASE_DIR, "static", "products.json")
-products_schema = {
-    "type": "array",
-    "items": {
-        "title": "Товар",
-        "type": "object",
-        "description": "Товары пивоварни",
-        "properties": {
-            "item": {
-                "type": [
-                    "string",
-                    "integer"
-                ],
-                "description": "Артикул товара"
-            },
-            "name": {
-                "type": "string",
-                "description": "Короткое наименование товара"
-            },
-            "description": {
-                "type": "string",
-                "description": "Развернутое описание товара"
-            },
-            "active": {
-                "type": "boolean",
-                "description": "Признак активности"
-            }
-        },
-        "required": [
-        ]
-    }
-}
-
-prices_path = os.path.join(settings.BASE_DIR, "static", "prices.json")
-prices_schema = {
-    "type": "array",
-    "items": {
-        "title": "Цена",
-        "type": "object",
-        "description": "Цена данного типа для товара ",
-        "x-tags": [
-            "1С",
-            "Офис",
-            "Фронтенд"
-        ],
-        "properties": {
-            "productItem": {
-                "type": "string",
-                "description": "Артикул товара"
-            },
-            "priceType": {
-                "type": "string",
-                "description": "Тип цены"
-            },
-            "amount": {
-                "type": "string",
-                "description": "Цена в рублях"
-            },
-            "dataBase": {
-                "description": "Индикатор базы данных",
-                "type": "boolean"
-            }
-        },
-        "required": [
-        ]
-    }
-}
 
 clients_path = os.path.join(settings.BASE_DIR, "static", "clients.json")
 clients_schema = {
@@ -323,42 +256,32 @@ checklistanswers_schema = {
 }
 
 
-# TODO: переписать функции. DRY!
 @api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def products(request):
     if request.method == 'GET':
-        try:
-            with open(products_path, 'r', encoding="utf-8") as f:
-                json_data = json.loads(f.read())
-                product_active = request.query_params.get('active', None)
-                if product_active:
-                    product_active = True if (product_active == "true" or product_active == "True") else False
-                    json_data = [x for x in json_data if x.get('active', True) == product_active]
-                return JsonResponse(json_data, safe=False)
-        except FileNotFoundError:
-            return Response('No such file, please upload it first', status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    elif request.method == 'PUT':
-        if request.user.userprofile.role == 'MPR':
-            return Response("You can't do this", status=status.HTTP_403_FORBIDDEN)
-        else:
+        productsQ = Product.objects.all()
+        active = request.query_params.get('active', None)
+        if active:
+            active = True if (active == "true" or active == "True") else False
+            productsQ = productsQ.filter(active=active)
+        serializer = ProductSerializer(productsQ, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    if request.method == 'PUT':
+        if request.user.userprofile.role != '1S':
+            return Response("Only 1S can do it", status=status.HTTP_403_FORBIDDEN)
+        data = JSONParser().parse(request)
+        for product in data:
             try:
-                with open(products_path, 'r', encoding="utf-8") as f:
-                    old_products = json.loads(f.read())
-            except FileNotFoundError:
-                old_products = []
-            try:
-                jsonschema.validate(instance=request.data, schema=products_schema)
-            except jsonschema.exceptions.ValidationError as e:
-                return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
-            with open(products_path, 'w', encoding="utf-8") as f:
-                new_products = old_products + request.data
-                # https://stackoverflow.com/questions/11092511/python-list-of-unique-dictionaries
-                new_products = list({v['item']: v for v in new_products}.values())
-                json.dump(new_products, f, ensure_ascii=False)
-            return Response('Product list have been saved', status=status.HTTP_200_OK)
-    else:
-        return Response('Method not allowed', status=status.HTTP_405_METHOD_NOT_ALLOWED)
+                instance = Product.objects.get(item=product['item'])
+            except (KeyError, Product.DoesNotExist):
+                instance = None
+            serializer = ProductSerializer(instance=instance, data=product)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response('Ok', status=status.HTTP_200_OK)
 
 
 @api_view(['GET', 'PUT'])
@@ -396,7 +319,7 @@ def prices(request):
             if serializer.is_valid():
                 serializer.save()
             else:
-                return Response('Price validation error', status=status.HTTP_400_BAD_REQUEST)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response('Ok', status=status.HTTP_200_OK)
 
 

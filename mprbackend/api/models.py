@@ -389,3 +389,14 @@ class Price(models.Model):
 
     def __str__(self):
         return "Цена на" + str(self.product_item) + " для " + str(self.price_type) + "; БД: " + str(self.database)
+
+
+class Product(models.Model):
+    item = models.CharField(max_length=200)
+    name = models.CharField(max_length=400, blank=True, null=True)
+    description = models.CharField(max_length=400, blank=True, null=True)
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
