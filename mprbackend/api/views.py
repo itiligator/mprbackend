@@ -268,8 +268,8 @@ def products(request):
         serializer = ProductSerializer(productsQ, many=True)
         return JsonResponse(serializer.data, safe=False)
     if request.method == 'PUT':
-        if request.user.userprofile.role != '1S':
-            return Response("Only 1S can do it", status=status.HTTP_403_FORBIDDEN)
+        if request.user.userprofile.role == 'MPR':
+            return Response("Only 1S and office can do it", status=status.HTTP_403_FORBIDDEN)
         data = JSONParser().parse(request)
         for product in data:
             try:
